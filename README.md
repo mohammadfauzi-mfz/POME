@@ -29,3 +29,8 @@ Aplikasi Android pemantauan pengaliran POME dari PKS ke blok kebun.
 Di Dashboard (paling bawah) ada kartu **Bagikan rekap**, mengikuti pilihan pompa dan rotasi:
 - **Kirim ringkasan ke WhatsApp**: teks ringkas (masuk PKS, dialokasi, outstanding, persen per blok), dibuka lewat menu bagikan Android.
 - **Bagikan file Excel**: 3 sheet (Rekap Blok, Input PKS, Alokasi) lengkap dengan koordinat GPS. Dibuat langsung di HP, tidak perlu internet.
+
+## Alokasi cepat
+- Di Dashboard, pilih blok di peta lalu tekan **Alokasikan ke blok ini**, atau tekan **Alokasi cepat** di kartu pompa.
+- Lembar alokasi menampilkan outstanding pompa, daftar blok, tombol **Sisa** per blok, dan **Isi otomatis** (membagi outstanding ke blok dengan capaian terendah lebih dulu). Bisa mengalokasikan banyak blok sekaligus; tersimpan offline juga.
+- Perbaikan: tanggal dari Google Sheet kini selalu tampil dd/mm (perlu deploy ulang `Code.gs`), dan tanggal input memakai zona waktu HP.

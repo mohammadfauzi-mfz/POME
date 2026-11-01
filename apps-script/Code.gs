@@ -38,7 +38,8 @@ function ensureCols(n) {
 function rows(n) {
   ensureCols(n);
   const v = sh(n).getDataRange().getValues(), h = v.shift();
-  return v.map(r => Object.fromEntries(h.map((k, i) => [k, String(r[i])])));
+  const f = x => x instanceof Date ? Utilities.formatDate(x, Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(x);
+  return v.map(r => Object.fromEntries(h.map((k, i) => [k, f(r[i])])));
 }
 const tok = u => hash(u.username + '|' + u.hash + '|' + PropertiesService.getScriptProperties().getProperty('KEY'));
 const out = o => ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);

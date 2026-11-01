@@ -56,8 +56,18 @@ nav button.on .ic{background:rgba(46,125,79,.2);color:var(--ac)}
 .pop{position:absolute;left:10px;right:10px;bottom:10px;z-index:3;background:var(--card);color:var(--tx);border-radius:16px;padding:12px;box-shadow:0 4px 16px rgba(0,0,0,.45)}
 .pg{height:8px;background:var(--bd);border-radius:4px;margin:8px 0;overflow:hidden}.pgb{height:100%}
 .pv{margin:6px 0;gap:6px}.pv div{font-size:14px;line-height:1.25}
-.mc.hs{height:500px}.mc.hs.fu{height:84vh}.mc.hs .lgd{display:none}
-</style></head><body><div id="app"></div>
+.mc.hs{height:580px}.mc.hs.fu{height:86vh}.mc.hs .lgd{display:none}
+#sheet{display:none}#sheet.on{display:block}
+#sheet .bd{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;animation:fi .2s}
+#sheet .sh2{position:fixed;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;z-index:51;background:var(--card);color:var(--tx);border-radius:22px 22px 0 0;padding:10px 16px calc(16px + env(safe-area-inset-bottom));max-height:92vh;overflow-y:auto;animation:su .25s ease-out;box-shadow:0 -6px 24px rgba(0,0,0,.35)}
+.gr{width:40px;height:4px;border-radius:2px;background:var(--bd);margin:0 auto 10px}
+.qs{background:var(--bg);border-radius:12px;padding:10px 12px;margin:10px 0;font-size:13px;line-height:1.6}
+.qa{display:flex;gap:6px;margin-bottom:4px}.qa .btn{margin:0;width:auto}
+.qr{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--bd);font-size:14px}.qr.f{background:rgba(46,125,79,.12);border-radius:8px;padding-left:6px;padding-right:6px}
+.qi{display:flex;flex-direction:column;align-items:flex-end}.qi>div{display:flex;gap:4px;align-items:center}.qi input{width:100px;text-align:right}.qi .btn{margin:0}
+#toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:#1b5e20;color:#fff;padding:10px 18px;border-radius:99px;font-weight:600;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}#toast.on{opacity:1}
+@keyframes su{from{transform:translateY(100%)}}@keyframes fi{from{opacity:0}}
+</style></head><body><div id="app"></div><div id="sheet"></div><div id="toast"></div>
 <script>
 const $=s=>document.querySelector(s);
 const srv=()=>localStorage.srv||(window.CFG&&CFG.URL)||'';
@@ -66,7 +76,9 @@ const S={u:J('u'),tab:'dash',rot:'R1',pf:'',z:1,px:0,py:0,lbl:true,full:false,mo
  f:{ip:'',ap:'',ab:'',ar:'R1'},d:J('cache')||{pompa:[],blok:[],input:[],alok:[]}};
 const fmt=n=>Math.round(n).toLocaleString('id-ID');
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-const today=()=>new Date().toISOString().slice(0,10);
+const pad2=n=>String(n).padStart(2,'0');
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())};
+const nd=t=>{t=String(t);if(/^\d{4}-\d{2}-\d{2}/.test(t))return t.slice(0,10);const d=new Date(t);return isNaN(d)?t:d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())};
 const dm=t=>{const p=String(t).slice(0,10).split('-');return p.length==3?p[2]+'/'+p[1]:t};
 const NE=m=>{const e=new Error(m);e.net=1;return e};
 async function api(a,o){
@@ -116,8 +128,8 @@ async function load(){
  if(OB().length&&!fl)return flush();
  try{const j=await api('all');
   S.d={pompa:j.Pompa,blok:j.Blok.map(b=>Object.assign(b,{luas:+b.luas})),
-   input:j.Input.map(i=>Object.assign(i,{hm0:+i.hm0,hm1:+i.hm1,vol:+i.vol})),
-   alok:j.Alokasi.map(a=>Object.assign(a,{vol:+a.vol}))};
+   input:j.Input.map(i=>Object.assign(i,{tgl:nd(i.tgl),hm0:+i.hm0,hm1:+i.hm1,vol:+i.vol})),
+   alok:j.Alokasi.map(a=>Object.assign(a,{tgl:nd(a.tgl),vol:+a.vol}))};
   saveCache();S.err='';S.off=false}
  catch(e){S.err=e.message;S.off=!!e.net;if(/Sesi/.test(e.message)){return logout()}}
  render()}
@@ -228,7 +240,7 @@ function pop(r){
  <div class="r2 pv"><div><b>${Math.round(p)}%</b><br><span class="mut">capaian</span></div><div><b>${fmt(g)} m³</b><br><span class="mut">sudah dialiri</span></div>
  <div><b>${fmt(g/s.luas)} m³/ha</b><br><span class="mut">dosis (target ${tgt})</span></div><div><b>${g>tg?fmt(g-tg):fmt(sisa(s,r))} m³</b><br><span class="mut">${g>tg?'kelebihan':'sisa kebutuhan'}</span></div></div>
  <div class="mut">${['R1','R2','R3','T'].map(k=>(k=='T'?'Tahun':k)+' '+Math.round(pct(s,k))+'%').join(' · ')}</div>
- <div class="mut">${al.length} kali alokasi${last?' · terakhir '+dm(last.tgl)+' ('+fmt(last.vol)+' m³)':''}<br>Outstanding ${pname(s.pompa)}: ${fmt(outst(s.pompa))} m³</div></div>`}
+ <div class="mut">${al.length} kali alokasi${last?' · terakhir '+dm(last.tgl)+' ('+fmt(last.vol)+' m³)':''}<br>Outstanding ${pname(s.pompa)}: ${fmt(outst(s.pompa))} m³</div>${K()?`<button class="btn" onclick="openAlok('${s.id}')">➕ Alokasikan ke blok ini</button>`:''}</div>`}
 function mapCard(r){
  const g=geoMap(r)||schemMap(r);
  if(!g)return '<div class="c lock">Belum ada blok. Tambahkan blok di menu Atur.</div>';
@@ -305,6 +317,53 @@ function shareTxt(){const t=textRekap();
  if(window.Android&&Android.shareText)Android.shareText(t);else window.open('https://wa.me/?text='+encodeURIComponent(t))}
 function shareCard(){return `<div class="c"><h3>Bagikan rekap</h3><div class="mut">Sesuai pilihan pompa dan rotasi di atas</div><button class="btn" style="background:#25d366" onclick="shareTxt()">💬 Kirim ringkasan ke WhatsApp</button><button class="btn" onclick="shareExcel()">📊 Bagikan file Excel</button></div>`}
 
+/* ===== Alokasi cepat: bottom sheet, bisa banyak blok sekaligus ===== */
+const Q={open:false,p:'',r:'R1',v:{},focus:null};
+const qBlocks=()=>S.d.blok.filter(b=>b.pompa==Q.p).sort((a,b)=>String(a.id).localeCompare(String(b.id),'id',{numeric:true}));
+function defRot(p){if(S.rot!='T')return S.rot;const bl=S.d.blok.filter(b=>b.pompa==p);for(const r of['R1','R2','R3'])if(bl.some(b=>pct(b,r)<100))return r;return 'R1'}
+function openAlok(id,pid){
+ if(!K())return;const b=id?blk(id):null;
+ Q.p=b?b.pompa:(pid||S.pf||(S.d.pompa[0]||{}).id);Q.r=defRot(Q.p);Q.v={};Q.focus=b?b.id:null;
+ if(b){const v=Math.floor(Math.min(Math.max(0,outst(Q.p)),sisa(b,Q.r)));if(v>0)Q.v[b.id]=v}
+ Q.open=true;qDraw();getGps()}
+function qClose(){Q.open=false;qDraw()}
+function qDraw(){
+ const el=$('#sheet');if(!Q.open){el.className='';el.innerHTML='';return}
+ const bl=qBlocks();el.className='on';
+ el.innerHTML=`<div class="bd" onclick="qClose()"></div><div class="sh2"><div class="gr"></div>
+ <div class="row" style="border:0;padding:0"><b style="font-size:18px">Alokasi ke blok</b><button class="btn sm" onclick="qClose()">✕</button></div>
+ <div class="r2"><div><label>Jalur pompa</label><select onchange="Q.p=this.value;Q.r=defRot(Q.p);Q.v={};Q.focus=null;qDraw()">${pOpts(Q.p)}</select></div>
+ <div><label>Rotasi</label><select onchange="Q.r=this.value;qDraw()">${opts([['R1','R1'],['R2','R2'],['R3','R3']],Q.r)}</select></div></div>
+ <div class="qs" id="qs"></div>
+ <div class="qa"><button class="btn sm" onclick="qAuto()">⚡ Isi otomatis</button><button class="btn sm" onclick="qClear()">Kosongkan</button></div>
+ <div>${bl.map((b,i)=>{const sv=Math.ceil(sisa(b,Q.r));return `<div class="qr${Q.focus==b.id?' f':''}"><span><b>${b.id}</b> · ${b.luas} ha<br><span class="mut">${Math.round(pct(b,Q.r))}% · sisa ${fmt(sv)} m³</span></span>
+  <span class="qi"><div><button class="btn sm" onclick="qSet(${i},${sv})">Sisa</button><input id="q_${i}" type="number" inputmode="decimal" placeholder="0" value="${Q.v[b.id]||''}" oninput="qIn(${i},this.value)"></div><span class="mut" id="qw_${i}"></span></span></div>`}).join('')||'<div class="mut" style="padding:10px 0">Pompa ini belum punya blok</div>'}</div>
+ ${gpsBox()}<button class="btn" id="qb" onclick="qSave()">Alokasikan</button></div>`;
+ qUpd();if(Q.focus){const i=bl.findIndex(b=>b.id==Q.focus),e=$('#q_'+i);if(e)setTimeout(()=>e.scrollIntoView({block:'center'}),50)}}
+function qUpd(){
+ const bl=qBlocks(),o=outst(Q.p);let tot=0,n=0;
+ bl.forEach((b,i)=>{const v=+Q.v[b.id]||0;if(v>0){tot+=v;n++}const w=$('#qw_'+i);
+  if(w){const pp=(got(b,Q.r)+v)/(250*b.luas)*100;w.innerHTML=v>0?'→ '+Math.round(pp)+'%'+(pp>100?' <b class="neg">⚠️ over</b>':''):''}});
+ const left=o-tot,q=$('#qs'),qb=$('#qb');
+ if(q)q.innerHTML=`Outstanding ${pname(Q.p)}: <b class="${o<0?'neg':''}">${fmt(o)} m³</b><br>Akan dialokasikan: <b>${fmt(tot)} m³</b> · ${left>=0?'sisa':'<span class="neg">kurang</span>'} <b class="${left<0?'neg':''}">${fmt(Math.abs(left))} m³</b>`;
+ if(qb)qb.textContent=n?`Alokasikan ${n} blok · ${fmt(tot)} m³`:'Alokasikan'}
+function qIn(i,v){const b=qBlocks()[i];if(b){Q.v[b.id]=v===''?0:+v;qUpd()}}
+function qSet(i,v){const b=qBlocks()[i];if(!b)return;Q.v[b.id]=v;const e=$('#q_'+i);if(e)e.value=v||'';qUpd()}
+function qClear(){Q.v={};Q.focus=null;qDraw()}
+function qAuto(){let left=Math.max(0,outst(Q.p));Q.v={};Q.focus=null;
+ qBlocks().sort((a,b)=>pct(a,Q.r)-pct(b,Q.r)).forEach(b=>{const v=Math.floor(Math.min(left,sisa(b,Q.r)));if(v>0){Q.v[b.id]=v;left-=v}});
+ if(!Object.keys(Q.v).length)toast('Tidak ada outstanding atau semua blok sudah tuntas');qDraw()}
+async function qSave(){
+ const items=qBlocks().map(b=>[b,+Q.v[b.id]||0]).filter(x=>x[1]>0);
+ if(!items.length)return alert('Isi volume minimal untuk satu blok');
+ const tot=items.reduce((a,x)=>a+x[1],0),o=outst(Q.p);
+ if(tot>o+0.5&&!confirm('Total '+fmt(tot)+' m³ melebihi outstanding '+fmt(o)+' m³. Tetap simpan?'))return;
+ if(S.sv)return;S.sv=1;const qb=$('#qb');if(qb)qb.textContent='Menyimpan...';
+ try{const g=await getGps(),r=Q.r;
+  items.forEach(([b,v])=>save('Alokasi',Object.assign({id:uid(),tgl:today(),blok:b.id,rotasi:r,vol:v,oleh:S.u.username},gpsF(g))));
+  qClose();toast('✓ '+items.length+' alokasi disimpan')}finally{S.sv=0}}
+function toast(m){const e=$('#toast');e.textContent=m;e.className='on';clearTimeout(toast.t);toast.t=setTimeout(()=>{e.className=''},2400)}
+
 function vDash(){
  const r=S.rot,pf=S.pf,D=S.d;
  const bl=D.blok.filter(b=>!pf||b.pompa==pf),ids=new Set(bl.map(b=>b.id)),ps=D.pompa.filter(p=>!pf||p.id==pf);
@@ -316,7 +375,7 @@ function vDash(){
  const pcs=ps.map(p=>{const pb=bl.filter(b=>b.pompa==p.id),op=pb.filter(b=>pct(b,r)<100).sort((a,b)=>pct(a,r)-pct(b,r)),o=outst(p.id),sk=op.reduce((s,b)=>s+sisa(b,r),0);
   const ch=op.slice(0,8).map(b=>`<span class="ch" style="background:${col(pct(b,r))}" onclick="pick('${b.id}',1)">${b.id} ${Math.round(pct(b,r))}%</span>`).join('')+(op.length>8?`<span class="ch" style="background:#6b7a70">+${op.length-8}</span>`:'');
   return `<div class="c"><div class="row" style="border:0;padding:0"><b>${p.nama}</b><span><b class="${o<0?'neg':''}">${fmt(o)} m³</b> <span class="mut">outstanding</span></span></div>
-  <div class="mut" style="margin:4px 0 8px">${pb.length} blok · <b style="color:var(--ac)">${op.length} masih bisa dialiri (${rl(r)})</b> · ${pb.length-op.length} tuntas · sisa kebutuhan ${fmt(sk)} m³</div>${ch||'<span class="mut">Semua blok sudah tuntas</span>'}</div>`}).join('');
+  <div class="mut" style="margin:4px 0 8px">${pb.length} blok · <b style="color:var(--ac)">${op.length} masih bisa dialiri (${rl(r)})</b> · ${pb.length-op.length} tuntas · sisa kebutuhan ${fmt(sk)} m³</div>${ch||'<span class="mut">Semua blok sudah tuntas</span>'}${K()&&pb.length?`<button class="btn" style="margin-top:8px;${o>0?'':'background:var(--bd);color:var(--tx)'}" onclick="openAlok(null,'${p.id}')">➕ Alokasi cepat${o>0?' ('+fmt(o)+' m³ tersedia)':''}</button>`:''}</div>`}).join('');
  const s=blk(S.sel);
  const det=s?`<div class="c"><h3>Blok ${s.id} · ${s.luas} ha · ${pname(s.pompa)}</h3>${['R1','R2','R3','T'].map(k=>`<div class="row"><span>${k=='T'?'Total 1 tahun (750/ha)':k}</span><span><b>${fmt(got(s,k)/s.luas)}</b> m³/ha · <b>${Math.round(pct(s,k))}%</b></span></div>`).join('')}<div class="mut" style="margin-top:6px">Sisa ${rl(r)}: ${fmt(sisa(s,r))} m³</div></div>`:'';
  const rek=bl.map(b=>{const p=pct(b,r);return `<div class="row" onclick="pick('${b.id}',1)"><span><b>${b.id}</b> · ${b.luas} ha<br><span class="mut">${pname(b.pompa)} · ${fmt(got(b,r)/b.luas)} m³/ha</span></span><span class="pc" style="background:${col(p)}">${Math.round(p)}%</span></div>`}).join('');
