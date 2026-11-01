@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>POME Monitor</title>
+<script src="config.js"></script>
+<style>
+:root{--bg:#f4f6f3;--card:#fff;--tx:#1d2b21;--mut:#6b7a70;--ac:#2e7d4f;--bd:#dfe5df;--bad:#c0392b;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#121815;--card:#1c2520;--tx:#e6efe8;--mut:#92a398;--ac:#4cc07f;--bd:#2d3a33;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,sans-serif}
+#app{max-width:520px;margin:0 auto;min-height:100vh}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--ac);color:#fff}
+header span{font-size:12px;opacity:.9}
+main{padding:12px 12px 84px}
+nav{position:fixed;bottom:0;left:0;right:0;max-width:520px;margin:0 auto;display:flex;background:var(--card);border-top:1px solid var(--bd)}
+nav button{flex:1;border:0;background:none;color:var(--mut);padding:10px 0;font-size:12px}
+nav button.on{color:var(--ac);font-weight:700}
+.c{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:10px}
+h3{margin:0 0 8px;font-size:15px}
+label{display:block;font-size:12px;color:var(--mut);margin:8px 0 3px}
+input,select{width:100%;padding:9px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font-size:15px}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn{width:100%;margin-top:10px;padding:11px;border:0;border-radius:10px;background:var(--ac);color:#fff;font-size:15px;font-weight:600}
+.sm{width:auto;padding:5px 10px;margin:0 0 0 6px;font-size:12px;background:var(--bd);color:var(--tx)}
+.row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd);font-size:14px}
+.row:last-child{border:0}.mut{color:var(--mut);font-size:12px}
+.seg{display:flex;gap:6px;margin-bottom:10px}
+.seg button{flex:1;padding:8px 0;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx)}
+.seg button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.neg{color:var(--bad)}.lock{text-align:center;color:var(--mut);padding:40px 10px}
+.bar{height:12px;border-radius:6px;background:linear-gradient(90deg,hsl(0,70%,46%),hsl(60,70%,44%),hsl(125,70%,40%));margin:6px 0 2px}
+.warn{background:#fff3cd;color:#664d03;border-radius:8px;padding:8px;font-size:12px;margin-bottom:10px}
+svg{width:100%;height:auto;display:block}svg text{font-size:9px;fill:#fff;font-weight:600;pointer-events:none}
+#lg{padding:60px 20px}
+header{background:#1b5e20;padding:14px 16px}
+.sy{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:99px;padding:7px 14px;font-weight:600;font-size:14px}
+.dt{width:10px;height:10px;border-radius:50%;background:#7cfc9a}.dt.off{background:#ffb74d}
+.fs{font-size:17px;font-weight:600;padding:14px;border:2px solid var(--bd);border-radius:14px;background:var(--card)}
+.kc{background:var(--card);border-radius:16px;padding:14px;border-left:6px solid;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.kv{font-size:28px;font-weight:800;line-height:1.2;margin:2px 0}.kv small{font-size:14px;font-weight:600;color:var(--mut)}
+.ch{display:inline-block;color:#fff;font-size:12px;font-weight:700;padding:4px 10px;border-radius:99px;margin:0 6px 6px 0}
+.pc{color:#fff;font-weight:700;padding:4px 10px;border-radius:99px;font-size:13px}
+.sh{margin:18px 4px 8px;font-size:18px}
+.mc{position:relative;background:#16221a;border-radius:20px;padding:6px;margin:14px 0 10px;height:380px}.mc.fu{height:78vh}
+.chips{position:absolute;left:14px;top:14px;z-index:2}
+.chip{border:0;border-radius:99px;background:#1b5e20;color:#fff;font-weight:700;padding:10px 16px;font-size:14px;opacity:.55}.chip.on{opacity:1}
+.zb{position:absolute;right:14px;top:14px;z-index:2;display:flex;flex-direction:column;gap:8px}
+.zb button{width:48px;height:48px;border:0;border-radius:14px;background:#f1f4f1;color:#1d2b21;font-size:22px;font-weight:700}
+.lgd{position:absolute;left:14px;bottom:14px;background:#fff;color:#1d2b21;border-radius:14px;padding:8px 12px;font-size:12px;font-weight:600}
+#ms{width:100%;height:100%;display:block}
+#ms text{fill:#fff;stroke:rgba(0,0,0,.7);paint-order:stroke;font-weight:700}
+nav button{display:flex;flex-direction:column;align-items:center;padding:8px 0;font-size:12px}
+.ic{display:flex;width:64px;height:32px;align-items:center;justify-content:center;border-radius:16px;margin-bottom:2px}
+nav button.on .ic{background:rgba(46,125,79,.2);color:var(--ac)}
+.pop{position:absolute;left:10px;right:10px;bottom:10px;z-index:3;background:var(--card);color:var(--tx);border-radius:16px;padding:12px;box-shadow:0 4px 16px rgba(0,0,0,.45)}
+.pg{height:8px;background:var(--bd);border-radius:4px;margin:8px 0;overflow:hidden}.pgb{height:100%}
+.pv{margin:6px 0;gap:6px}.pv div{font-size:14px;line-height:1.25}
+.mc.hs{height:500px}.mc.hs.fu{height:84vh}.mc.hs .lgd{display:none}
+</style></head><body><div id="app"></div>
+<script>
+const $=s=>document.querySelector(s);
+const srv=()=>localStorage.srv||(window.CFG&&CFG.URL)||'';
+const J=k=>{try{return JSON.parse(localStorage[k])}catch(e){return null}};
+const S={u:J('u'),tab:'dash',rot:'R1',pf:'',z:1,px:0,py:0,lbl:true,full:false,moved:false,goMap:false,mb:null,sel:null,err:'',busy:false,users:[],
+ f:{ip:'',ap:'',ab:'',ar:'R1'},d:J('cache')||{pompa:[],blok:[],input:[],alok:[]}};
+const fmt=n=>Math.round(n).toLocaleString('id-ID');
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+const today=()=>new Date().toISOString().slice(0,10);
+const dm=t=>{const p=String(t).slice(0,10).split('-');return p.length==3?p[2]+'/'+p[1]:t};
+const NE=m=>{const e=new Error(m);e.net=1;return e};
+async function api(a,o){
+ if(!srv())throw NE('Alamat server belum diatur');
+ const c=new AbortController(),t=setTimeout(()=>c.abort(),20000);let r,j;
+ try{r=await fetch(srv(),{method:'POST',body:JSON.stringify(Object.assign({action:a,token:S.u&&S.u.token},o)),signal:c.signal});j=await r.json()}
+ catch(x){throw NE('Tidak ada sinyal / server tidak terjangkau')}
+ finally{clearTimeout(t)}
+ if(!j.ok)throw new Error(j.err||'Gagal');return j}
+const R=()=>S.u.role,A=()=>R()=='Admin',P=()=>A()||R()=='PKS',K=()=>A()||R()=='Kebun';
+const can={input:P,alok:K,dash:()=>true,atur:()=>true};
+const blk=id=>S.d.blok.find(b=>b.id==id);
+const got=(b,r)=>S.d.alok.filter(a=>a.blok==b.id&&(r=='T'||a.rotasi==r)).reduce((s,a)=>s+a.vol,0);
+const pct=(b,r)=>got(b,r)/((r=='T'?750:250)*b.luas)*100;
+const outst=p=>S.d.input.filter(i=>i.pompa==p).reduce((s,i)=>s+i.vol,0)-S.d.alok.filter(a=>(blk(a.blok)||{}).pompa==p).reduce((s,a)=>s+a.vol,0);
+const col=p=>p>100?'#000':`hsl(${Math.round(Math.max(0,p)*1.25)},70%,${p<50?46:40}%)`;
+const pname=id=>(S.d.pompa.find(p=>p.id==id)||{nama:'?'}).nama;
+const opts=(a,sel)=>a.map(([v,l])=>`<option value="${v}" ${v==sel?'selected':''}>${l}</option>`).join('');
+const pOpts=sel=>opts(S.d.pompa.map(p=>[p.id,p.nama]),sel);
+const lock=m=>`<div class="lock">🔒<br>${m}</div>`;
+
+/* ===== Mode offline: antrean perubahan di HP, otomatis dikirim saat ada sinyal ===== */
+const OB=()=>J('ob')||[];
+const setOB=a=>{try{localStorage.ob=JSON.stringify(a)}catch(e){}};
+const saveCache=()=>{try{localStorage.cache=JSON.stringify(S.d)}catch(e){}};
+const TK={Pompa:'pompa',Blok:'blok',Input:'input',Alokasi:'alok'};
+function applyLocal(op){
+ const k=TK[op.t];if(!k)return;
+ if(op.type=='save'){const i=S.d[k].findIndex(x=>x.id==op.row.id);
+  if(i>=0)S.d[k][i]=Object.assign({},S.d[k][i],op.row);else S.d[k].push(Object.assign({},op.row))}
+ else S.d[k]=S.d[k].filter(x=>x.id!=op.id)}
+function enqueue(op){op.qid=uid();applyLocal(op);setOB(OB().concat([op]));saveCache();render();flush()}
+let fl=false;
+async function flush(){
+ if(fl||!S.u)return;
+ if(!OB().length)return load();
+ fl=true;render();
+ try{let q=OB();
+  while(q.length){const op=q[0];
+   try{op.type=='save'?await api('save',{t:op.t,row:op.row}):await api('del',{t:op.t,id:op.id})}
+   catch(e){if(e.net||/Sesi/.test(e.message))throw e;S.rej=(S.rej||[]).concat(op.t+': '+e.message)}
+   q=OB().filter(x=>x.qid!=op.qid);setOB(q)}
+  fl=false;await load()}
+ catch(e){S.err=e.message;S.off=!!e.net;if(/Sesi/.test(e.message)){fl=false;return logout()}}
+ finally{fl=false;render();if(OB().length&&!S.off)setTimeout(flush,400)}}
+async function load(){
+ if(OB().length&&!fl)return flush();
+ try{const j=await api('all');
+  S.d={pompa:j.Pompa,blok:j.Blok.map(b=>Object.assign(b,{luas:+b.luas})),
+   input:j.Input.map(i=>Object.assign(i,{hm0:+i.hm0,hm1:+i.hm1,vol:+i.vol})),
+   alok:j.Alokasi.map(a=>Object.assign(a,{vol:+a.vol}))};
+  saveCache();S.err='';S.off=false}
+ catch(e){S.err=e.message;S.off=!!e.net;if(/Sesi/.test(e.message)){return logout()}}
+ render()}
+function save(t,row){
+ if(!TK[t])return api('save',{t,row}).then(load).catch(e=>alert(e.message));
+ enqueue({type:'save',t,row,by:S.u.username})}
+function del(t,id){if(!confirm('Hapus data ini?'))return;
+ if(!TK[t])return api('del',{t,id}).then(load).catch(e=>alert(e.message));
+ enqueue({type:'del',t,id,by:S.u.username})}
+window.addEventListener('online',()=>flush());
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.u&&OB().length)flush()});
+setInterval(()=>{if(S.u&&OB().length)flush()},30000);
+
+/* ===== GPS ===== */
+S.gps=null;
+const gpsTxt=()=>{const g=S.gps;return !g?'📍 Lokasi belum didapat':g.err?'📍 '+g.err:`📍 ${g.lat.toFixed(5)}, ${g.lng.toFixed(5)} (±${Math.round(g.acc)} m)`};
+const upGps=()=>{const e=$('#gps');if(e)e.textContent=gpsTxt()};
+function getGps(force){return new Promise(res=>{
+ if(!navigator.geolocation){S.gps={err:'GPS tidak didukung'};upGps();return res(null)}
+ if(!force&&S.gps&&S.gps.t&&Date.now()-S.gps.t<120000)return res(S.gps);
+ const e=$('#gps');if(e)e.textContent='📍 Mencari lokasi...';
+ navigator.geolocation.getCurrentPosition(p=>{S.gps={lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy,t:Date.now()};upGps();res(S.gps)},
+  er=>{if(!S.gps||!S.gps.t)S.gps={err:er.code==1?'Izin lokasi ditolak. Aktifkan di pengaturan HP':'Lokasi belum tersedia (sinyal GPS lemah)'};upGps();res(null)},
+  {enableHighAccuracy:true,timeout:12000,maximumAge:30000})})}
+const gpsF=g=>g&&g.t?{lat:+g.lat.toFixed(6),lng:+g.lng.toFixed(6),akurasi:Math.round(g.acc),waktu:new Date(g.t).toISOString()}:{};
+const gpsBox=()=>`<div class="mut" style="margin-top:8px"><span id="gps">${gpsTxt()}</span><button class="btn sm" onclick="getGps(true)">Perbarui</button></div>`;
+const gpsLink=r=>r.lat&&r.lng?` · <a href="https://maps.google.com/?q=${r.lat},${r.lng}">📍 Lokasi</a>`:'';
+const pend=id=>S.pq&&S.pq.has(id)?' ⏳':'';
+async function login(){
+ try{const j=await api('login',{username:$('#un').value.trim(),password:$('#pw').value});
+  S.u={username:j.username,role:j.role,token:j.token};localStorage.u=JSON.stringify(S.u);S.tab='dash';await load();checkUpd(false)}
+ catch(e){alert(e.message)}}
+function logout(){S.u=null;localStorage.removeItem('u');render()}
+function setSrv(){const v=prompt('URL Web App Apps Script:',srv());if(v!==null){localStorage.srv=v.trim();render()}}
+async function go(t){S.tab=t;if(t=='input'||t=='alok')getGps();if(t=='atur'&&!S.upd)checkUpd(false);if(t=='atur'&&A()){try{S.users=(await api('users')).users}catch(e){}}render()}
+
+function vLogin(){return `<div id="lg"><h2 style="text-align:center;color:var(--ac)">💧 POME Monitor</h2><div class="c">
+<label>Username</label><input id="un" autocapitalize="none"><label>Password</label><input id="pw" type="password">
+<button class="btn" onclick="login()">Masuk</button></div>
+<div class="mut" style="text-align:center">${srv()?'':'⚠️ Server belum diatur. '}<a href="#" onclick="setSrv();return false">Atur server</a></div><div class="mut" style="text-align:center;margin-top:18px">Create By Mohammad Fauzi · Versi ${AV().v}</div></div>`}
+
+function vInput(){
+ if(!can.input())return lock('Menu ini khusus tim PKS dan Admin');
+ const f=S.f;if(!S.d.pompa.find(p=>p.id==f.ip))f.ip=(S.d.pompa[0]||{}).id;
+ return `<div class="c"><h3>Input pengaliran</h3><label>Pompa</label><select onchange="S.f.ip=this.value">${pOpts(f.ip)}</select>
+ <div class="r2"><div><label>HM awal</label><input id="h0" type="number" inputmode="decimal"></div><div><label>HM akhir</label><input id="h1" type="number" inputmode="decimal"></div></div>
+ <label>Volume dialihkan (m³)</label><input id="vl" type="number" inputmode="decimal">${gpsBox()}<button class="btn" onclick="addIn()">Simpan</button></div>
+ <div class="c"><h3>Outstanding per pompa</h3>${S.d.pompa.map(p=>`<div class="row"><span>${p.nama}</span><b class="${outst(p.id)<0?'neg':''}">${fmt(outst(p.id))} m³</b></div>`).join('')}</div>
+ <div class="c"><h3>Riwayat input</h3>${S.d.input.slice().reverse().slice(0,30).map(i=>`<div class="row"><span>${dm(i.tgl)} · ${pname(i.pompa)}${pend(i.id)}<br><span class="mut">HM ${i.hm0} → ${i.hm1} (${(i.hm1-i.hm0).toFixed(1)} jam) · ${i.oleh}${gpsLink(i)}</span></span><span><b>${fmt(i.vol)}</b> m³<button class="btn sm" onclick="editIn('${i.id}')">Edit</button><button class="btn sm" onclick="del('Input','${i.id}')">✕</button></span></div>`).join('')||'<div class="mut">Belum ada data</div>'}</div>`}
+async function addIn(){const v=+$('#vl').value,h0=+$('#h0').value,h1=+$('#h1').value;if(!v||!S.f.ip)return alert('Isi pompa dan volume');
+ if(S.sv)return;S.sv=1;try{const g=await getGps();save('Input',Object.assign({id:uid(),tgl:today(),pompa:S.f.ip,hm0:h0,hm1:h1,vol:v,oleh:S.u.username},gpsF(g)))}finally{S.sv=0}}
+function editIn(id){const i=S.d.input.find(x=>x.id==id),v=prompt('Koreksi volume (m³):',i.vol);
+ if(v===null||isNaN(+v))return;const h0=prompt('HM awal:',i.hm0),h1=prompt('HM akhir:',i.hm1);
+ save('Input',Object.assign({},i,{vol:+v,hm0:+h0,hm1:+h1}))}
+
+function vAlok(){
+ if(!can.alok())return lock('Menu ini khusus tim Kebun dan Admin');
+ const f=S.f;if(!S.d.pompa.find(p=>p.id==f.ap))f.ap=(S.d.pompa[0]||{}).id;
+ const bl=S.d.blok.filter(b=>b.pompa==f.ap);if(!bl.find(b=>b.id==f.ab))f.ab=bl[0]?bl[0].id:'';
+ return `<div class="c"><h3>Alokasi ke blok</h3><label>Jalur pompa</label><select onchange="S.f.ap=this.value;render()">${pOpts(f.ap)}</select>
+ <div class="mut" style="margin-top:6px">Outstanding: <b class="${outst(f.ap)<0?'neg':''}">${fmt(outst(f.ap))} m³</b></div>
+ <div class="r2"><div><label>Blok</label><select onchange="S.f.ab=this.value">${opts(bl.map(b=>[b.id,b.id+' ('+b.luas+' ha)']),f.ab)}</select></div>
+ <div><label>Rotasi</label><select onchange="S.f.ar=this.value">${opts([['R1','R1'],['R2','R2'],['R3','R3']],f.ar)}</select></div></div>
+ <label>Volume (m³)</label><input id="av" type="number" inputmode="decimal">${gpsBox()}<button class="btn" onclick="addAl()">Alokasikan</button></div>
+ <div class="c"><h3>Riwayat alokasi</h3>${S.d.alok.slice().reverse().slice(0,30).map(a=>`<div class="row"><span>${a.blok} · ${a.rotasi} · ${dm(a.tgl)}${pend(a.id)}<br><span class="mut">${blk(a.blok)?fmt(a.vol/blk(a.blok).luas)+' m³/ha':''} · ${a.oleh}${gpsLink(a)}</span></span><span><b>${fmt(a.vol)}</b> m³<button class="btn sm" onclick="editAl('${a.id}')">Edit</button><button class="btn sm" onclick="del('Alokasi','${a.id}')">✕</button></span></div>`).join('')||'<div class="mut">Belum ada data</div>'}</div>`}
+async function addAl(){const v=+$('#av').value;if(!v||!S.f.ab)return alert('Isi blok dan volume');
+ if(S.sv)return;S.sv=1;try{const g=await getGps();save('Alokasi',Object.assign({id:uid(),tgl:today(),blok:S.f.ab,rotasi:S.f.ar,vol:v,oleh:S.u.username},gpsF(g)))}finally{S.sv=0}}
+function editAl(id){const a=S.d.alok.find(x=>x.id==id),v=prompt('Koreksi volume (m³):',a.vol);
+ if(v!==null&&!isNaN(+v))save('Alokasi',Object.assign({},a,{vol:+v}))}
+
+const sisa=(b,r)=>Math.max(0,(r=='T'?750:250)*b.luas-got(b,r));
+const rl=r=>r=='T'?'1 Tahun':r;
+const vis=b=>!S.pf||(b&&b.pompa==S.pf);
+function geoMap(r){
+ const g=J('geo'),k=localStorage.gk;if(!g||!k)return null;
+ const ps=[];let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+ g.features.forEach(f=>{const m=f.geometry;if(!m)return;
+  const rs=m.type=='Polygon'?[m.coordinates]:m.type=='MultiPolygon'?m.coordinates:[];
+  rs.forEach(q=>q.forEach(ring=>ring.forEach(c=>{x0=Math.min(x0,c[0]);x1=Math.max(x1,c[0]);y0=Math.min(y0,c[1]);y1=Math.max(y1,c[1])})));
+  ps.push({id:String((f.properties||{})[k]),rs})});
+ if(x0>x1)return null;
+ const kx=Math.cos((y0+y1)/2*Math.PI/180),w=(x1-x0)*kx,h=y1-y0,sc=300/Math.max(w,h,1e-9),fs=300/70;
+ const X=c=>((c[0]-x0)*kx*sc).toFixed(1),Y=c=>((y1-c[1])*sc).toFixed(1);
+ const body=ps.map(p=>{const b=blk(p.id),fill=b?col(pct(b,r)):'#5c6b62';
+  const d=p.rs.map(q=>q.map(ring=>'M'+ring.map(c=>X(c)+','+Y(c)).join('L')+'Z').join('')).join('');
+  const r0=p.rs[0]&&p.rs[0][0]||[],cx=r0.reduce((s,c)=>s+ +X(c),0)/(r0.length||1),cy=r0.reduce((s,c)=>s+ +Y(c),0)/(r0.length||1);
+  const lb=S.lbl?`<text x="${cx}" y="${cy}" text-anchor="middle" style="font-size:${fs}px;stroke-width:${fs/5}px">${p.id}</text>${b?`<text x="${cx}" y="${cy+fs*1.1}" text-anchor="middle" style="font-size:${fs}px;stroke-width:${fs/5}px">${Math.round(pct(b,r))}%</text>`:''}`:'';
+  return `<g opacity="${vis(b)?1:.2}" onclick="if(S.moved)return;pick('${p.id}')" style="cursor:pointer"><path d="${d}" fill="${fill}" fill-rule="evenodd" stroke="${S.sel==p.id?'#ffeb3b':'rgba(255,255,255,.55)'}" stroke-width="${S.sel==p.id?fs/3:fs/14}"/>${lb}</g>`}).join('');
+ return {w:w*sc,h:h*sc,body}}
+function schemMap(r){
+ if(!S.d.blok.length)return null;
+ const rows={},cnt={};S.d.blok.forEach(b=>{rows[b.pompa]=(rows[b.pompa]||0)+1});
+ const mx=Math.max(1,...Object.values(rows)),n=S.d.pompa.length||1;
+ const hd=S.d.pompa.map((p,i)=>`<text x="${55+i*100}" y="14" text-anchor="middle" style="font-size:11px;stroke-width:0">${p.nama}</text>`).join('');
+ const pl=S.d.blok.map(b=>{const pi=Math.max(0,S.d.pompa.findIndex(p=>p.id==b.pompa)),ri=cnt[b.pompa]=(cnt[b.pompa]||0)+1,x=10+pi*100,y=24+(ri-1)*78,p=pct(b,r);
+  const lb=S.lbl?`<text x="${x+46}" y="${y+33}" text-anchor="middle" style="font-size:11px;stroke-width:2px">${b.id}</text><text x="${x+46}" y="${y+48}" text-anchor="middle" style="font-size:11px;stroke-width:2px">${Math.round(p)}%</text>`:'';
+  return `<g opacity="${vis(b)?1:.2}" onclick="if(S.moved)return;pick('${b.id}')" style="cursor:pointer"><polygon points="${x},${y+4} ${x+88},${y} ${x+92},${y+66} ${x+4},${y+70}" fill="${col(p)}" stroke="${S.sel==b.id?'#ffeb3b':'rgba(255,255,255,.5)'}" stroke-width="${S.sel==b.id?3:1}"/>${lb}</g>`}).join('');
+ return {w:n*100+10,h:mx*78+30,body:hd+pl}}
+function pick(id,sc){S.sel=id;S.goMap=!!sc;render()}
+function pop(r){
+ const s=blk(S.sel);if(!s)return '';
+ const tgt=r=='T'?750:250,tg=tgt*s.luas,g=got(s,r),p=pct(s,r);
+ const al=S.d.alok.filter(a=>a.blok==s.id&&(r=='T'||a.rotasi==r)),last=al.slice().sort((a,b)=>String(b.tgl).localeCompare(String(a.tgl)))[0];
+ const st=p>100?['Over','#000']:p>=100?['Tuntas','#2e9e4f']:g>0?['Berjalan','#f5a623']:['Belum mulai','#6b7a70'];
+ return `<div class="pop"><div class="row" style="border:0;padding:0"><b style="font-size:17px">Blok ${s.id}</b><span><span class="pc" style="background:${st[1]}">${st[0]}</span><button class="btn sm" onclick="S.sel=null;render()">✕</button></span></div>
+ <div class="mut">${s.luas} ha · ${pname(s.pompa)} · ${rl(r)}</div>
+ <div class="pg"><div class="pgb" style="width:${Math.min(100,p)}%;background:${col(p)}"></div></div>
+ <div class="r2 pv"><div><b>${Math.round(p)}%</b><br><span class="mut">capaian</span></div><div><b>${fmt(g)} m³</b><br><span class="mut">sudah dialiri</span></div>
+ <div><b>${fmt(g/s.luas)} m³/ha</b><br><span class="mut">dosis (target ${tgt})</span></div><div><b>${g>tg?fmt(g-tg):fmt(sisa(s,r))} m³</b><br><span class="mut">${g>tg?'kelebihan':'sisa kebutuhan'}</span></div></div>
+ <div class="mut">${['R1','R2','R3','T'].map(k=>(k=='T'?'Tahun':k)+' '+Math.round(pct(s,k))+'%').join(' · ')}</div>
+ <div class="mut">${al.length} kali alokasi${last?' · terakhir '+dm(last.tgl)+' ('+fmt(last.vol)+' m³)':''}<br>Outstanding ${pname(s.pompa)}: ${fmt(outst(s.pompa))} m³</div></div>`}
+function mapCard(r){
+ const g=geoMap(r)||schemMap(r);
+ if(!g)return '<div class="c lock">Belum ada blok. Tambahkan blok di menu Atur.</div>';
+ S.mb=g;const z=S.z,w=g.w/z,h=g.h/z,x=(g.w-w)/2+S.px,y=(g.h-h)/2+S.py;
+ return `<div class="mc${S.full?' fu':''}${blk(S.sel)?' hs':''}"><div class="chips"><button class="chip ${S.lbl?'on':''}" onclick="S.lbl=!S.lbl;render()">Label blok</button></div>
+ <div class="zb"><button onclick="zoom(1.6)">+</button><button onclick="zoom(1/1.6)">−</button><button onclick="fit()">⤢</button><button onclick="S.full=!S.full;render()">⛶</button></div>
+ <svg id="ms" viewBox="${x} ${y} ${w} ${h}" style="touch-action:${z>1?'none':'pan-y'}">${g.body}</svg>${pop(r)}
+ <div class="lgd">Capaian dosis ${rl(r)} (%)<div class="bar" style="width:150px"></div><div style="display:flex;justify-content:space-between;width:150px"><span>0</span><span>50</span><span>100</span></div><div><span style="display:inline-block;width:11px;height:11px;background:#000;border-radius:3px;vertical-align:-1px"></span> &gt;100% over</div></div></div>
+ ${J('geo')&&localStorage.gk?'':'<div class="mut" style="margin:-4px 4px 10px">Peta skematis. Import GeoJSON di menu Atur.</div>'}`}
+function zoom(f){S.z=Math.max(1,Math.min(14,S.z*f));if(S.z==1){S.px=0;S.py=0}render()}
+function fit(){S.z=1;S.px=0;S.py=0;render()}
+function attachMap(){const s=$('#ms');if(!s||!S.mb)return;let d=null;
+ s.onpointerdown=e=>{d={x:e.clientX,y:e.clientY,px:S.px,py:S.py};S.moved=false};
+ s.onpointermove=e=>{if(!d||S.z<=1)return;const dx=e.clientX-d.x,dy=e.clientY-d.y;if(Math.abs(dx)+Math.abs(dy)>6)S.moved=true;if(!S.moved)return;
+  const vw=S.mb.w/S.z,vh=S.mb.h/S.z,sc=Math.min(s.clientWidth/vw,s.clientHeight/vh);S.px=d.px-dx/sc;S.py=d.py-dy/sc;
+  s.setAttribute('viewBox',`${(S.mb.w-vw)/2+S.px} ${(S.mb.h-vh)/2+S.py} ${vw} ${vh}`)};
+ s.onpointerup=s.onpointercancel=()=>{d=null;setTimeout(()=>{S.moved=false},60)}}
+
+function vDash(){
+ const r=S.rot,pf=S.pf,D=S.d;
+ const bl=D.blok.filter(b=>!pf||b.pompa==pf),ids=new Set(bl.map(b=>b.id)),ps=D.pompa.filter(p=>!pf||p.id==pf);
+ const inp=D.input.filter(i=>!pf||i.pompa==pf),al=D.alok.filter(a=>ids.has(a.blok)),alr=al.filter(a=>r=='T'||a.rotasi==r);
+ const sum=a=>a.reduce((s,x)=>s+x.vol,0),tin=sum(inp),out=tin-sum(al);
+ const pr=bl.map(b=>pct(b,r)),tun=pr.filter(p=>p>=100).length,ov=pr.filter(p=>p>100).length,ber=pr.length-tun;
+ const nOut=ps.filter(p=>outst(p.id)>0).length;
+ const card=(c,l,v,s)=>`<div class="kc" style="border-left-color:${c}"><div class="mut">${l}</div><div class="kv">${v}</div><div class="mut">${s}</div></div>`;
+ const pcs=ps.map(p=>{const pb=bl.filter(b=>b.pompa==p.id),op=pb.filter(b=>pct(b,r)<100).sort((a,b)=>pct(a,r)-pct(b,r)),o=outst(p.id),sk=op.reduce((s,b)=>s+sisa(b,r),0);
+  const ch=op.slice(0,8).map(b=>`<span class="ch" style="background:${col(pct(b,r))}" onclick="pick('${b.id}',1)">${b.id} ${Math.round(pct(b,r))}%</span>`).join('')+(op.length>8?`<span class="ch" style="background:#6b7a70">+${op.length-8}</span>`:'');
+  return `<div class="c"><div class="row" style="border:0;padding:0"><b>${p.nama}</b><span><b class="${o<0?'neg':''}">${fmt(o)} m³</b> <span class="mut">outstanding</span></span></div>
+  <div class="mut" style="margin:4px 0 8px">${pb.length} blok · <b style="color:var(--ac)">${op.length} masih bisa dialiri (${rl(r)})</b> · ${pb.length-op.length} tuntas · sisa kebutuhan ${fmt(sk)} m³</div>${ch||'<span class="mut">Semua blok sudah tuntas</span>'}</div>`}).join('');
+ const s=blk(S.sel);
+ const det=s?`<div class="c"><h3>Blok ${s.id} · ${s.luas} ha · ${pname(s.pompa)}</h3>${['R1','R2','R3','T'].map(k=>`<div class="row"><span>${k=='T'?'Total 1 tahun (750/ha)':k}</span><span><b>${fmt(got(s,k)/s.luas)}</b> m³/ha · <b>${Math.round(pct(s,k))}%</b></span></div>`).join('')}<div class="mut" style="margin-top:6px">Sisa ${rl(r)}: ${fmt(sisa(s,r))} m³</div></div>`:'';
+ const rek=bl.map(b=>{const p=pct(b,r);return `<div class="row" onclick="pick('${b.id}',1)"><span><b>${b.id}</b> · ${b.luas} ha<br><span class="mut">${pname(b.pompa)} · ${fmt(got(b,r)/b.luas)} m³/ha</span></span><span class="pc" style="background:${col(p)}">${Math.round(p)}%</span></div>`}).join('');
+ return `<div class="r2"><div><label>Jalur / Pompa</label><select class="fs" onchange="S.pf=this.value;render()">${opts([['','Semua Pompa']].concat(D.pompa.map(p=>[p.id,p.nama])),pf)}</select></div>
+ <div><label>Rotasi</label><select class="fs" onchange="S.rot=this.value;render()">${opts([['R1','R1'],['R2','R2'],['R3','R3'],['T','1 Tahun']],r)}</select></div></div>
+ <div class="r2" style="margin-top:12px">${card('#2e9e4f','Masuk dari PKS',fmt(tin)+' <small>m³</small>',inp.length+' kali input')}
+ ${card('#2e9e4f','Sudah Dialokasi',fmt(sum(alr))+' <small>m³</small>',alr.length+' kali · '+rl(r))}
+ ${card('#d93a35','Outstanding',fmt(out)+' <small>m³</small>',nOut+' pompa menunggu alokasi')}
+ ${card('#f5a623','Status Blok',ber+' <small>berjalan</small> · '+tun+' <small>tuntas</small>',ov+' over 100% · dari '+bl.length+' blok')}</div>
+ <h3 class="sh">Status per Jalur Pompa</h3>${pcs||'<div class="mut">Belum ada pompa</div>'}
+ ${mapCard(r)}<h3 class="sh">Rekap per Blok</h3><div class="c">${rek||'<div class="mut">Belum ada blok</div>'}</div>`}
+
+const REPO=()=>localStorage.repo||(window.CFG&&CFG.REPO)||'';
+const AV=()=>window.Android?{b:Android.build(),v:Android.version()||'1.0'}:{b:0,v:'1.0'};
+async function checkUpd(manual){
+ S.upd={st:'cek'};if(manual)render();
+ try{if(!REPO())throw new Error('Repo GitHub belum diatur');
+  const r=await fetch('https://api.github.com/repos/'+REPO()+'/releases/tags/latest');
+  if(!r.ok)throw new Error(r.status==404?'Rilis belum ada atau repo bersifat privat':'GitHub error '+r.status);
+  const j=await r.json(),m=/build\s*(\d+)/i.exec((j.name||'')+' '+(j.body||'')),nb=m?+m[1]:0,as=(j.assets||[]).find(a=>/\.apk$/i.test(a.name));
+  if(!as)throw new Error('File APK tidak ditemukan di rilis');
+  S.upd={st:nb>AV().b?'baru':'ok',nb,url:as.browser_download_url}}
+ catch(e){S.upd={st:'err',m:/fetch/i.test(e.message)?'Tidak ada koneksi internet':e.message}}
+ if(manual||S.tab=='atur'||S.upd.st=='baru')render()}
+function doUpd(){if(window.Android)Android.download(S.upd.url);else window.open(S.upd.url)}
+function setRepo(){const v=prompt('Repo GitHub (pemilik/nama):',REPO());if(v!==null){localStorage.repo=v.trim();S.upd=null;checkUpd(true)}}
+function updBanner(){return S.upd&&S.upd.st=='baru'&&S.tab!='atur'?`<div class="warn" style="background:#d9f2e0;color:#14532d">🔔 Versi baru tersedia (build ${S.upd.nb}). <a href="#" onclick="go('atur');return false"><b>Perbarui</b></a></div>`:''}
+function updCard(){const U=S.upd||{},av=AV();
+ return `<div class="c"><h3>Pembaruan aplikasi</h3><div class="mut">Terpasang: versi ${av.v}${av.b?' (build '+av.b+')':''} · Repo: ${REPO()||'belum diatur'}</div>
+ ${U.st=='baru'?`<div class="warn" style="background:#d9f2e0;color:#14532d;margin-top:8px">Versi baru tersedia (build ${U.nb})</div><button class="btn" onclick="doUpd()">⬇️ Perbarui sekarang</button>`:U.st=='ok'?'<div class="mut" style="margin-top:8px">✅ Sudah versi terbaru</div>':U.st=='err'?`<div class="warn" style="margin-top:8px">${U.m}</div>`:U.st=='cek'?'<div class="mut" style="margin-top:8px">Memeriksa pembaruan...</div>':''}
+ <button class="btn" ${U.st=='baru'?'style="background:var(--bd);color:var(--tx)"':''} onclick="checkUpd(true)">Cek pembaruan</button>
+ ${A()?`<button class="btn sm" style="margin:8px 0 0" onclick="setRepo()">Atur repo GitHub</button>`:''}</div>`}
+function aboutCard(){const av=AV();
+ return `<div class="c" style="text-align:center"><h3>Tentang Aplikasi</h3><div><b>POME Monitor</b></div><div class="mut">Pemantauan pengaliran POME dari PKS ke blok kebun</div>
+ <div style="margin-top:10px">Create By <b>Mohammad Fauzi</b></div><div class="mut">Contact Me for Suggestion &amp; Feedback</div>
+ <a href="https://wa.me/6285252390543" style="display:inline-block;margin-top:8px;background:#25d366;color:#fff;text-decoration:none;font-weight:700;padding:9px 18px;border-radius:99px">💬 WhatsApp</a>
+ <div class="mut" style="margin-top:12px">Versi Aplikasi ${av.v}${av.b?' (build '+av.b+')':''}</div></div>`}
+function vAtur(){
+ const gk=J('geo')?Object.keys((J('geo').features[0]||{}).properties||{}):[];
+ return `<div class="c"><h3>Jalur / pompa</h3>${S.d.pompa.map(p=>`<div class="row">${P()?`<input value="${p.nama}" onchange="save('Pompa',{id:'${p.id}',nama:this.value})"><button class="btn sm" onclick="del('Pompa','${p.id}')">✕</button>`:p.nama}</div>`).join('')}
+ ${P()?`<button class="btn" onclick="addP()">+ Tambah pompa</button>`:'<div class="mut">Penambahan pompa oleh tim PKS</div>'}</div>
+ <div class="c"><h3>Daftar blok</h3>${S.d.blok.map(b=>`<div class="row"><span><b>${b.id}</b> · ${b.luas} ha<br><span class="mut">${pname(b.pompa)}</span></span>${K()?`<span><button class="btn sm" onclick="editB('${b.id}')">Edit</button><button class="btn sm" onclick="del('Blok','${b.id}')">✕</button></span>`:''}</div>`).join('')}
+ ${K()?`<div class="r2"><div><label>Blok</label><input id="nb"></div><div><label>Luas (ha)</label><input id="nl" type="number" inputmode="decimal"></div></div><label>Jalur pompa</label><select id="np">${pOpts('')}</select><button class="btn" onclick="addB()">+ Tambah blok</button>`:'<div class="mut">Penambahan blok oleh tim Kebun</div>'}</div>
+ <div class="c"><h3>Peta (GeoJSON) di HP ini</h3><input type="file" accept=".geojson,.json,application/json,*/*" onchange="imp(this)">
+ ${gk.length?`<label>Kolom nama blok</label><select onchange="localStorage.gk=this.value;render()">${opts(gk.map(k=>[k,k]),localStorage.gk)}</select><button class="btn sm" style="margin:8px 0 0" onclick="delete localStorage.geo;render()">Hapus peta</button>`:''}
+ <div class="mut" id="gi" style="margin-top:6px">Isi kolom nama blok harus sama dengan nama blok di daftar. Peta tersimpan di HP ini saja.</div></div>
+ ${A()?`<div class="c"><h3>User</h3>${S.users.map(u=>`<div class="row"><span>${u.username} <span class="mut">${u.role}</span></span><span><button class="btn sm" onclick="pwU('${u.username}','${u.role}')">Reset PW</button>${u.username!=S.u.username?`<button class="btn sm" onclick="del('User','${u.username}')">✕</button>`:''}</span></div>`).join('')}
+ <div class="r2"><div><label>Username</label><input id="nu" autocapitalize="none"></div><div><label>Password</label><input id="npw"></div></div><label>Peran</label><select id="nr"><option>PKS</option><option>Kebun</option><option>Admin</option></select><button class="btn" onclick="addU()">+ Tambah user</button></div>`:''}
+ ${updCard()}
+ <div class="c"><div class="row"><span>Masuk sebagai <b>${S.u.username}</b> (${R()})</span><button class="btn sm" onclick="logout()">Keluar</button></div>
+ <div class="row"><span class="mut">Server: ${srv()?'terhubung':'belum diatur'}</span><button class="btn sm" onclick="setSrv()">Atur server</button></div></div>
+ ${aboutCard()}`}
+function addP(){save('Pompa',{id:uid(),nama:'Pompa '+(S.d.pompa.length+1)})}
+function addB(){const id=$('#nb').value.trim(),l=+$('#nl').value;if(!id||!l||!$('#np').value)return alert('Isi blok, luas, dan pompa');
+ if(blk(id))return alert('Blok sudah ada');save('Blok',{id,luas:l,pompa:$('#np').value})}
+function editB(id){const b=blk(id),l=prompt('Luas (ha):',b.luas);if(l!==null&&+l>0)save('Blok',Object.assign({},b,{luas:+l}))}
+async function addU(){const u=$('#nu').value.trim(),p=$('#npw').value;if(!u||!p)return alert('Isi username dan password');
+ try{await api('save',{t:'User',row:{username:u,password:p,role:$('#nr').value}});S.users=(await api('users')).users;render()}catch(e){alert(e.message)}}
+async function pwU(u,role){const p=prompt('Password baru untuk '+u+':');if(!p)return;
+ try{await api('save',{t:'User',row:{username:u,password:p,role}});alert('Password diubah')}catch(e){alert(e.message)}}
+function imp(el){const f=el.files[0];if(!f)return;const r=new FileReader();
+ r.onload=()=>{try{const g=JSON.parse(r.result);if(!g.features||!g.features.length)throw 0;
+  const keys=Object.keys(g.features[0].properties||{}),ids=S.d.blok.map(b=>b.id);let best=keys[0],bn=-1;
+  keys.forEach(k=>{const n=g.features.filter(x=>ids.includes(String(x.properties[k]))).length;if(n>bn){bn=n;best=k}});
+  localStorage.geo=JSON.stringify(g);localStorage.gk=best;render();
+  setTimeout(()=>{const e=$('#gi');if(e)e.textContent='Terbaca '+g.features.length+' poligon, '+bn+' cocok dengan blok (kolom: '+best+').'},0)}
+  catch(e){alert('File GeoJSON tidak valid')}};r.readAsText(f)}
+
+function render(){
+ const app=$('#app'),y=window.scrollY;
+ if(!S.u){app.innerHTML=vLogin();return}
+ if(!can[S.tab]())S.tab='dash';
+ const I={dash:'<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/>',
+  input:'<path d="M12 3S5.5 10.5 5.5 15a6.5 6.5 0 0013 0C18.5 10.5 12 3 12 3z"/>',
+  alok:'<path d="M4 8h13m0 0l-3-3m3 3l-3 3M20 16H7m0 0l3-3m-3 3l3 3"/>',
+  atur:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9L7 7M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>'};
+ const T={dash:'Dashboard',input:'Input PKS',alok:'Alokasi',atur:'Atur'};
+ const off=!!S.off,nq=OB().length;S.pq=new Set(OB().filter(o=>o.type=='save').map(o=>o.row.id));
+ const lab=fl?'Menyinkronkan...':off?'Offline'+(nq?' · '+nq+' antrean':''):nq?nq+' antrean':'Tersinkron';
+ app.innerHTML=`<header><b style="font-size:19px">POME Monitor</b><button class="sy" onclick="flush()"><i class="dt ${off||nq?'off':''}"></i>${lab}</button></header><main>${updBanner()}${S.err?`<div class="warn">${S.err}${off?(nq?' — '+nq+' data tersimpan di HP dan otomatis dikirim saat ada sinyal.':' — menampilkan data tersimpan terakhir.'):''}</div>`:''}${S.rej&&S.rej.length?`<div class="warn">Ditolak server: ${S.rej.join('; ')}<button class="btn sm" onclick="S.rej=[];render()">OK</button></div>`:''}${{dash:vDash,input:vInput,alok:vAlok,atur:vAtur}[S.tab]()}</main>
+ <nav>${Object.keys(T).filter(k=>true).map(k=>`<button class="${S.tab==k?'on':''}" onclick="go('${k}')"><span class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${I[k]}</svg></span>${T[k]}</button>`).join('')}</nav>`;
+ window.scrollTo(0,y);attachMap();if(S.goMap){S.goMap=false;const m=document.querySelector('.mc');if(m&&m.scrollIntoView)m.scrollIntoView({block:'start'})}}
+render();if(S.u){load();checkUpd(false)}
+</script></body></html>
