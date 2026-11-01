@@ -127,7 +127,8 @@ class MainActivity : Activity() {
             override fun onShowFileChooser(v: WebView, c: ValueCallback<Array<Uri>>, p: FileChooserParams): Boolean {
                 cb?.onReceiveValue(null)
                 cb = c
-                return try { startActivityForResult(p.createIntent(), 1); true } catch (e: Exception) { cb = null; false }
+                val it = Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*")
+                return try { startActivityForResult(Intent.createChooser(it, "Pilih file"), 1); true } catch (e: Exception) { cb = null; false }
             }
         }
         wv.loadUrl("https://appassets.androidplatform.net/assets/index.html")
