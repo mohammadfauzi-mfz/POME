@@ -13,6 +13,8 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
+import android.util.Base64
+import androidx.core.content.FileProvider
 import android.webkit.*
 import android.widget.Toast
 import androidx.webkit.WebViewAssetLoader
@@ -31,6 +33,28 @@ class MainActivity : Activity() {
         @JavascriptInterface fun version(): String =
             try { packageManager.getPackageInfo(packageName, 0).versionName ?: "" } catch (e: Exception) { "" }
         @JavascriptInterface fun download(url: String) { runOnUiThread { startDownload(url) } }
+        @JavascriptInterface fun shareText(t: String) {
+            runOnUiThread {
+                startActivity(Intent.createChooser(
+                    Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, t), "Bagikan rekap"))
+            }
+        }
+        @JavascriptInterface fun shareFile(name: String, b64: String, mime: String) {
+            try {
+                val dir = File(cacheDir, "share").apply { mkdirs() }
+                dir.listFiles()?.forEach { it.delete() }
+                val f = File(dir, name.replace(Regex("[^A-Za-z0-9._-]"), "_"))
+                f.writeBytes(Base64.decode(b64, Base64.DEFAULT))
+                val u = FileProvider.getUriForFile(this@MainActivity, "$packageName.fileprovider", f)
+                runOnUiThread {
+                    startActivity(Intent.createChooser(
+                        Intent(Intent.ACTION_SEND).setType(mime).putExtra(Intent.EXTRA_STREAM, u)
+                            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION), "Bagikan file"))
+                }
+            } catch (e: Exception) {
+                runOnUiThread { Toast.makeText(this@MainActivity, "Gagal membagikan file", Toast.LENGTH_LONG).show() }
+            }
+        }
     }
 
     @Suppress("DEPRECATION")

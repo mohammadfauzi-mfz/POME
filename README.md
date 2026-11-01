@@ -24,3 +24,8 @@ Aplikasi Android pemantauan pengaliran POME dari PKS ke blok kebun.
 - Input PKS dan Alokasi otomatis mencatat koordinat GPS (lat, lng, akurasi, waktu) dan tersimpan di kolom baru sheet `Input` dan `Alokasi`. GPS tetap jalan tanpa internet. Izin lokasi diminta saat pertama kali.
 - Saat sinyal lemah atau offline, data disimpan sementara di HP (antrean, tanda ⏳ di riwayat) dan dikirim otomatis begitu ada sinyal: saat sinyal kembali, saat aplikasi dibuka lagi, dan tiap 30 detik. Tombol status di header menampilkan Offline / jumlah antrean / Tersinkron.
 - **Wajib**: tempel ulang `apps-script/Code.gs` yang baru, lalu Deploy > Manage deployments > Edit > New version (URL tetap). Kolom lat/lng/akurasi/waktu ditambahkan otomatis ke sheet lama.
+
+## Bagikan rekap
+Di Dashboard (paling bawah) ada kartu **Bagikan rekap**, mengikuti pilihan pompa dan rotasi:
+- **Kirim ringkasan ke WhatsApp**: teks ringkas (masuk PKS, dialokasi, outstanding, persen per blok), dibuka lewat menu bagikan Android.
+- **Bagikan file Excel**: 3 sheet (Rekap Blok, Input PKS, Alokasi) lengkap dengan koordinat GPS. Dibuat langsung di HP, tidak perlu internet.
