@@ -4,7 +4,7 @@ const SH = {
   Pompa: ['id', 'nama'],
   Blok: ['id', 'luas', 'pompa'],
   Input: ['id', 'tgl', 'pompa', 'hm0', 'hm1', 'vol', 'oleh', 'lat', 'lng', 'akurasi', 'waktu'],
-  Alokasi: ['id', 'tgl', 'blok', 'rotasi', 'vol', 'oleh', 'lat', 'lng', 'akurasi', 'waktu'],
+  Alokasi: ['id', 'tgl', 'blok', 'rotasi', 'vol', 'oleh', 'lat', 'lng', 'akurasi', 'waktu', 'riwayat'],
   User: ['username', 'hash', 'role']
 };
 const PERM = { Pompa: ['PKS', 'Admin'], Blok: ['Kebun', 'Admin'], Input: ['PKS', 'Admin'], Alokasi: ['Kebun', 'Admin'], User: ['Admin'] };
@@ -64,6 +64,12 @@ function handle(q) {
   if (q.action == 'all') return { ok: true, Pompa: rows('Pompa'), Blok: rows('Blok'), Input: rows('Input'), Alokasi: rows('Alokasi') };
   if (q.action == 'users') { need('User', me); return { ok: true, users: rows('User').map(x => ({ username: x.username, role: x.role })) }; }
   if (q.action == 'save') { need(q.t, me); save(q.t, q.row, me); return { ok: true }; }
+  if (q.action == 'batch') {
+    const by = {};
+    (q.items || []).forEach(it => { need(it.t, me); (by[it.t] = by[it.t] || []).push(it.row); });
+    Object.keys(by).forEach(k => saveMany(k, by[k], me));
+    return { ok: true };
+  }
   if (q.action == 'del') { need(q.t, me); del(q.t, q.id); return { ok: true }; }
   throw new Error('Aksi tidak dikenal');
 }
@@ -87,4 +93,18 @@ function save(t, row, me) {
 function del(t, id) {
   const s = sh(t), k = t == 'User' ? 'username' : 'id', v = s.getDataRange().getValues(), ki = v[0].indexOf(k);
   for (let i = v.length - 1; i >= 1; i--) if (String(v[i][ki]) == String(id)) s.deleteRow(i + 1);
+}
+
+// Simpan banyak baris sekaligus (impor): baca sheet sekali, update yang ada, tambah yang baru.
+function saveMany(t, list, me) {
+  ensureCols(t);
+  const s = sh(t), k = t == 'User' ? 'username' : 'id', v = s.getDataRange().getValues(), h = v[0], ki = h.indexOf(k), idx = {}, add = [];
+  for (let i = 1; i < v.length; i++) idx[String(v[i][ki])] = i;
+  list.forEach(row => {
+    if (h.indexOf('oleh') >= 0 && !row.oleh) row.oleh = me.username;
+    const arr = h.map(c => row[c] === undefined ? '' : row[c]), i = idx[String(row[k])];
+    if (i !== undefined) s.getRange(i + 1, 1, 1, h.length).setValues([arr]);
+    else add.push(arr);
+  });
+  if (add.length) s.getRange(s.getLastRow() + 1, 1, add.length, h.length).setValues(add);
 }

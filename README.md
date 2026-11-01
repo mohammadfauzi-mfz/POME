@@ -34,3 +34,8 @@ Di Dashboard (paling bawah) ada kartu **Bagikan rekap**, mengikuti pilihan pompa
 - Di Dashboard, pilih blok di peta lalu tekan **Alokasikan ke blok ini**, atau tekan **Alokasi cepat** di kartu pompa.
 - Lembar alokasi menampilkan outstanding pompa, daftar blok, tombol **Sisa** per blok, dan **Isi otomatis** (membagi outstanding ke blok dengan capaian terendah lebih dulu). Bisa mengalokasikan banyak blok sekaligus; tersimpan offline juga.
 - Perbaikan: tanggal dari Google Sheet kini selalu tampil dd/mm (perlu deploy ulang `Code.gs`), dan tanggal input memakai zona waktu HP.
+
+## Tanggal, pompa fleksibel, dan impor riwayat
+- Form **Input PKS** punya kolom *Tanggal alir*, form **Alokasi** dan lembar alokasi cepat punya *Tanggal alokasi* (default hari ini, bisa diganti untuk input data lama). Tanggal juga bisa dikoreksi lewat tombol Edit. Riwayat tampil dd/mm/yyyy, urut dari tanggal terbaru.
+- **Pompa boleh kosong**: blok bisa ditambah tanpa pompa dan dikaitkan nanti lewat Atur › Daftar blok › Edit (luas dan pompa). Dashboard punya filter dan kartu *Tanpa pompa*. Luas bisa direvisi kapan saja; capaian dihitung ulang otomatis.
+- **Impor CSV** (Atur › Impor data blok & riwayat): kolom `blok, luas, pompa, r1, r2, r3, tgl1, tgl2, tgl3`. Riwayat ditandai 📜 dan tidak mengurangi saldo outstanding pompa. Impor ulang file yang sama tidak membuat data ganda (ID tetap `rw-<blok>-R<n>`). Tempel ulang `Code.gs` agar kolom `riwayat` dan impor massal aktif.
