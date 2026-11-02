@@ -42,8 +42,8 @@ header{background:#1b5e20;padding:14px 16px}
 .pc{color:#fff;font-weight:700;padding:4px 10px;border-radius:99px;font-size:13px}
 .sh{margin:18px 4px 8px;font-size:18px}
 .mc{position:relative;background:#16221a;border-radius:20px;padding:6px;margin:14px 0 10px;height:380px}.mc.fu{height:78vh}
-.chips{position:absolute;left:14px;top:14px;z-index:2}
-.chip{border:0;border-radius:99px;background:#1b5e20;color:#fff;font-weight:700;padding:10px 16px;font-size:14px;opacity:.55}.chip.on{opacity:1}
+.chips{position:absolute;left:14px;top:14px;z-index:2;display:flex;flex-wrap:wrap;gap:6px;max-width:calc(100% - 90px)}
+.chip{border:0;border-radius:99px;background:#1b5e20;color:#fff;font-weight:700;padding:8px 13px;font-size:13px;opacity:.55}.chip.on{opacity:1}
 .zb{position:absolute;right:14px;top:14px;z-index:2;display:flex;flex-direction:column;gap:8px}
 .zb button{width:48px;height:48px;border:0;border-radius:14px;background:#f1f4f1;color:#1d2b21;font-size:22px;font-weight:700}
 .lgd{position:absolute;left:14px;bottom:14px;background:#fff;color:#1d2b21;border-radius:14px;padding:8px 12px;font-size:12px;font-weight:600}
@@ -208,22 +208,34 @@ function editAl(id){const a=S.d.alok.find(x=>x.id==id),v=prompt('Koreksi volume 
 const sisa=(b,r)=>Math.max(0,(r=='T'?750:250)*b.luas-got(b,r));
 const rl=r=>r=='T'?'1 Tahun':r;
 const vis=b=>pmatch(b?b.pompa:'~');
+S.lyr=Object.assign({B:true,E:true,P:false},J('lyr')||{});
 function geoMap(r){
  const g=J('geo'),k=localStorage.gk;if(!g||!k)return null;
- const ps=[];let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+ const L={B:[],E:[],P:[]};let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
  g.features.forEach(f=>{const m=f.geometry;if(!m)return;
-  const rs=m.type=='Polygon'?[m.coordinates]:m.type=='MultiPolygon'?m.coordinates:[];
-  rs.forEach(q=>q.forEach(ring=>ring.forEach(c=>{x0=Math.min(x0,c[0]);x1=Math.max(x1,c[0]);y0=Math.min(y0,c[1]);y1=Math.max(y1,c[1])})));
-  ps.push({id:String((f.properties||{})[k]),rs})});
+  const rs=m.type=='Polygon'?[m.coordinates]:m.type=='MultiPolygon'?m.coordinates:[];if(!rs.length)return;
+  const j=(f.properties||{}).jenis,ly=j=='Existing'?'E':j=='Potensi'?'P':'B';
+  if(ly!='P')rs.forEach(q=>q.forEach(ring=>ring.forEach(c=>{x0=Math.min(x0,c[0]);x1=Math.max(x1,c[0]);y0=Math.min(y0,c[1]);y1=Math.max(y1,c[1])})));
+  L[ly].push({id:String((f.properties||{})[k]),rs})});
  if(x0>x1)return null;
- const kx=Math.cos((y0+y1)/2*Math.PI/180),w=(x1-x0)*kx,h=y1-y0,sc=300/Math.max(w,h,1e-9),fs=300/70;
+ S.geoL={E:L.E.length>0,P:L.P.length>0};
+ const hasLA=L.E.length>0,kx=Math.cos((y0+y1)/2*Math.PI/180),w=(x1-x0)*kx,h=y1-y0,sc=300/Math.max(w,h,1e-9),fs=300/70;
  const X=c=>((c[0]-x0)*kx*sc).toFixed(1),Y=c=>((y1-c[1])*sc).toFixed(1);
- const body=ps.map(p=>{const b=blk(p.id),fill=b?col(pct(b,r)):'#5c6b62';
-  const d=p.rs.map(q=>q.map(ring=>'M'+ring.map(c=>X(c)+','+Y(c)).join('L')+'Z').join('')).join('');
-  const r0=p.rs[0]&&p.rs[0][0]||[],cx=r0.reduce((s,c)=>s+ +X(c),0)/(r0.length||1),cy=r0.reduce((s,c)=>s+ +Y(c),0)/(r0.length||1);
-  const lb=S.lbl?`<text x="${cx}" y="${cy}" text-anchor="middle" style="font-size:${fs}px;stroke-width:${fs/5}px">${p.id}</text>${b?`<text x="${cx}" y="${cy+fs*1.1}" text-anchor="middle" style="font-size:${fs}px;stroke-width:${fs/5}px">${Math.round(pct(b,r))}%</text>`:''}`:'';
-  return `<g opacity="${vis(b)?1:.2}" onclick="if(S.moved)return;pick('${p.id}')" style="cursor:pointer"><path d="${d}" fill="${fill}" fill-rule="evenodd" stroke="${S.sel==p.id?'#ffeb3b':'rgba(255,255,255,.55)'}" stroke-width="${S.sel==p.id?fs/3:fs/14}"/>${lb}</g>`}).join('');
- return {w:w*sc,h:h*sc,body}}
+ const dd=rs=>rs.map(q=>q.map(ring=>'M'+ring.map(c=>X(c)+','+Y(c)).join('L')+'Z').join('')).join('');
+ const big=rs=>{let bs=null,ba=-1;rs.forEach(q=>{const o=q[0];let xa=1e9,xb=-1e9,ya=1e9,yb=-1e9;o.forEach(c=>{xa=Math.min(xa,c[0]);xb=Math.max(xb,c[0]);ya=Math.min(ya,c[1]);yb=Math.max(yb,c[1])});const a=(xb-xa)*(yb-ya);if(a>ba){ba=a;bs=o}});return bs||[]};
+ const cen=ring=>[ring.reduce((a,c)=>a+ +X(c),0)/(ring.length||1),ring.reduce((a,c)=>a+ +Y(c),0)/(ring.length||1)];
+ const base=hasLA?L.B:(L.B.length?L.B:L.E);
+ let body='',lbls='';
+ if(S.lyr.P&&L.P.length)body+=L.P.map(p=>`<path d="${dd(p.rs)}" fill="rgba(74,163,255,.18)" stroke="#4aa3ff" stroke-width="${fs/16}" stroke-dasharray="${fs/5},${fs/8}" style="pointer-events:none"/>`).join('');
+ const bl=base.map(p=>{const b=blk(p.id),pc=b?pct(b,r):0,fill=hasLA?'#26352d':(b?col(pc):'#5c6b62');
+  if(S.lyr.B||!hasLA){body+=`<g opacity="${vis(b)?1:.2}" onclick="if(S.moved)return;pick('${p.id}')" style="cursor:pointer"><path d="${dd(p.rs)}" fill="${S.lyr.B||!hasLA?fill:'transparent'}" fill-rule="evenodd" stroke="${S.lyr.B||!hasLA?'rgba(255,255,255,.6)':'none'}" stroke-width="${fs/14}"/></g>`}
+  else body+=`<g onclick="if(S.moved)return;pick('${p.id}')"><path d="${dd(p.rs)}" fill="transparent"/></g>`;
+  if(S.lbl){const [cx,cy]=cen(big(p.rs));lbls+=`<g opacity="${vis(b)?1:.2}" style="pointer-events:none"><text x="${cx}" y="${cy}" text-anchor="middle" style="font-size:${fs}px;stroke-width:${fs/5}px">${p.id}</text>${b?`<text x="${cx}" y="${cy+fs*1.1}" text-anchor="middle" style="font-size:${fs}px;stroke-width:${fs/5}px">${Math.round(pc)}%</text>`:''}</g>`}
+  return p}),selB=base.find(p=>p.id==S.sel);
+ if(hasLA&&S.lyr.E)body+=L.E.map(p=>{const b=blk(p.id),fill=b?col(pct(b,r)):'#5c6b62';
+  return `<g opacity="${vis(b)?1:.2}" onclick="if(S.moved)return;pick('${p.id}')" style="cursor:pointer"><path d="${dd(p.rs)}" fill="${fill}" fill-rule="evenodd" stroke="rgba(0,0,0,.4)" stroke-width="${fs/40}"/></g>`}).join('');
+ if(selB)body+=`<path d="${dd(selB.rs)}" fill="none" stroke="#ffeb3b" stroke-width="${fs/3}" style="pointer-events:none"/>`;
+ return {w:w*sc,h:h*sc,body:body+lbls}}
 function schemMap(r){
  if(!S.d.blok.length)return null;
  const un=S.d.blok.some(b=>!hasP(b.pompa)),cols=S.d.pompa.concat(un?[{id:'',nama:'Tanpa pompa'}]:[]),key=b=>hasP(b.pompa)?b.pompa:'';
@@ -254,19 +266,38 @@ function mapCard(r){
  const g=geoMap(r)||schemMap(r);
  if(!g)return '<div class="c lock">Belum ada blok. Tambahkan blok di menu Atur.</div>';
  S.mb=g;const z=S.z,w=g.w/z,h=g.h/z,x=(g.w-w)/2+S.px,y=(g.h-h)/2+S.py;
- return `<div class="mc${S.full?' fu':''}${blk(S.sel)?' hs':''}"><div class="chips"><button class="chip ${S.lbl?'on':''}" onclick="S.lbl=!S.lbl;render()">Label blok</button></div>
+ return `<div class="mc${S.full?' fu':''}${blk(S.sel)?' hs':''}"><div class="chips"><button class="chip ${S.lbl?'on':''}" onclick="S.lbl=!S.lbl;render()">Label</button>${S.geoL&&S.geoL.E?`<button class="chip ${S.lyr.B?'on':''}" onclick="tgLy('B')">Batas blok</button><button class="chip ${S.lyr.E?'on':''}" onclick="tgLy('E')">Area LA</button>`:''}${S.geoL&&S.geoL.P?`<button class="chip ${S.lyr.P?'on':''}" onclick="tgLy('P')">Potensi</button>`:''}</div>
  <div class="zb"><button onclick="zoom(1.6)">+</button><button onclick="zoom(1/1.6)">−</button><button onclick="fit()">⤢</button><button onclick="S.full=!S.full;render()">⛶</button></div>
  <svg id="ms" viewBox="${x} ${y} ${w} ${h}" style="touch-action:${z>1?'none':'pan-y'}">${g.body}</svg>${pop(r)}
  <div class="lgd">Capaian dosis ${rl(r)} (%)<div class="bar" style="width:150px"></div><div style="display:flex;justify-content:space-between;width:150px"><span>0</span><span>50</span><span>100</span></div><div><span style="display:inline-block;width:11px;height:11px;background:#000;border-radius:3px;vertical-align:-1px"></span> &gt;100% over</div></div></div>
  ${J('geo')&&localStorage.gk?'':'<div class="mut" style="margin:-4px 4px 10px">Peta skematis. Import GeoJSON di menu Atur.</div>'}`}
+function tgLy(k){S.lyr[k]=!S.lyr[k];try{localStorage.lyr=JSON.stringify(S.lyr)}catch(e){}render()}
 function zoom(f){S.z=Math.max(1,Math.min(14,S.z*f));if(S.z==1){S.px=0;S.py=0}render()}
 function fit(){S.z=1;S.px=0;S.py=0;render()}
-function attachMap(){const s=$('#ms');if(!s||!S.mb)return;let d=null;
- s.onpointerdown=e=>{d={x:e.clientX,y:e.clientY,px:S.px,py:S.py};S.moved=false};
- s.onpointermove=e=>{if(!d||S.z<=1)return;const dx=e.clientX-d.x,dy=e.clientY-d.y;if(Math.abs(dx)+Math.abs(dy)>6)S.moved=true;if(!S.moved)return;
+let lastTap=0,lastTapX=0,lastTapY=0;
+function attachMap(){const s=$('#ms');if(!s||!S.mb)return;
+ const ta=()=>{s.style.touchAction=(S.z>1||S.full)?'none':'pan-y'};
+ const geom=z=>{const R=s.getBoundingClientRect(),vw=S.mb.w/z,vh=S.mb.h/z,sc=Math.min(R.width/vw,R.height/vh);return {R,vw,vh,sc,ox:(R.width-vw*sc)/2,oy:(R.height-vh*sc)/2}};
+ const toMap=(sx,sy,z,px,py)=>{const q=geom(z);return [(S.mb.w-q.vw)/2+px+(sx-q.R.left-q.ox)/q.sc,(S.mb.h-q.vh)/2+py+(sy-q.R.top-q.oy)/q.sc]};
+ const setV=(z,mx,my,sx,sy)=>{z=Math.max(1,Math.min(14,z));const q=geom(z);
+  if(z==1){S.px=0;S.py=0}else{S.px=mx-(sx-q.R.left-q.ox)/q.sc-(S.mb.w-q.vw)/2;S.py=my-(sy-q.R.top-q.oy)/q.sc-(S.mb.h-q.vh)/2}
+  S.z=z;s.setAttribute('viewBox',`${(S.mb.w-q.vw)/2+S.px} ${(S.mb.h-q.vh)/2+S.py} ${q.vw} ${q.vh}`)};
+ ta();let d=null,pn=null;
+ s.onpointerdown=e=>{if(pn)return;d={x:e.clientX,y:e.clientY,px:S.px,py:S.py};S.moved=false};
+ s.onpointermove=e=>{if(!d||pn||S.z<=1)return;const dx=e.clientX-d.x,dy=e.clientY-d.y;if(Math.abs(dx)+Math.abs(dy)>6)S.moved=true;if(!S.moved)return;
   const vw=S.mb.w/S.z,vh=S.mb.h/S.z,sc=Math.min(s.clientWidth/vw,s.clientHeight/vh);S.px=d.px-dx/sc;S.py=d.py-dy/sc;
   s.setAttribute('viewBox',`${(S.mb.w-vw)/2+S.px} ${(S.mb.h-vh)/2+S.py} ${vw} ${vh}`)};
- s.onpointerup=s.onpointercancel=()=>{d=null;setTimeout(()=>{S.moved=false},60)}}
+ s.onpointerup=s.onpointercancel=()=>{d=null;setTimeout(()=>{S.moved=false},60)};
+ const md=t=>[Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY),(t[0].clientX+t[1].clientX)/2,(t[0].clientY+t[1].clientY)/2];
+ s.addEventListener('touchstart',e=>{
+  if(e.touches.length==2){e.preventDefault();const [dist,mx,my]=md(e.touches),m=toMap(mx,my,S.z,S.px,S.py);pn={dist,z:S.z,m};S.moved=true;d=null}
+  else if(e.touches.length==1){const t=e.touches[0],n=Date.now();
+   if(n-lastTap<320&&Math.hypot(t.clientX-lastTapX,t.clientY-lastTapY)<40){e.preventDefault();const m=toMap(t.clientX,t.clientY,S.z,S.px,S.py);setV(S.z*2,m[0],m[1],t.clientX,t.clientY);ta();S.moved=true;setTimeout(()=>{S.moved=false},400);lastTap=0}
+   else{lastTap=n;lastTapX=t.clientX;lastTapY=t.clientY}}},{passive:false});
+ s.addEventListener('touchmove',e=>{if(pn&&e.touches.length==2){e.preventDefault();const [dist,mx,my]=md(e.touches);setV(pn.z*dist/pn.dist,pn.m[0],pn.m[1],mx,my)}},{passive:false});
+ const end=e=>{if(pn&&e.touches.length<2){pn=null;ta();setTimeout(()=>{S.moved=false},120)}};
+ s.addEventListener('touchend',end);s.addEventListener('touchcancel',end);
+ s.addEventListener('wheel',e=>{e.preventDefault();const m=toMap(e.clientX,e.clientY,S.z,S.px,S.py);setV(S.z*(e.deltaY<0?1.25:0.8),m[0],m[1],e.clientX,e.clientY);ta()},{passive:false})}
 
 
 /* ===== Bagikan rekap: teks WhatsApp dan file Excel (tanpa library, jalan offline) ===== */

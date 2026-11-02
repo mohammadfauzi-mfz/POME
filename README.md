@@ -39,3 +39,7 @@ Di Dashboard (paling bawah) ada kartu **Bagikan rekap**, mengikuti pilihan pompa
 - Form **Input PKS** punya kolom *Tanggal alir*, form **Alokasi** dan lembar alokasi cepat punya *Tanggal alokasi* (default hari ini, bisa diganti untuk input data lama). Tanggal juga bisa dikoreksi lewat tombol Edit. Riwayat tampil dd/mm/yyyy, urut dari tanggal terbaru.
 - **Pompa boleh kosong**: blok bisa ditambah tanpa pompa dan dikaitkan nanti lewat Atur › Daftar blok › Edit (luas dan pompa). Dashboard punya filter dan kartu *Tanpa pompa*. Luas bisa direvisi kapan saja; capaian dihitung ulang otomatis.
 - **Impor CSV** (Atur › Impor data blok & riwayat): kolom `blok, luas, pompa, r1, r2, r3, tgl1, tgl2, tgl3`. Riwayat ditandai 📜 dan tidak mengurangi saldo outstanding pompa. Impor ulang file yang sama tidak membuat data ganda (ID tetap `rw-<blok>-R<n>`). Tempel ulang `Code.gs` agar kolom `riwayat` dan impor massal aktif.
+
+## Peta: cubit zoom dan lapisan
+- Dua jari untuk zoom in/out, satu jari menggeser (di tampilan biasa satu jari tetap menggulir halaman; pakai ⛶ layar penuh untuk geser bebas). Ketuk dua kali untuk zoom in. Roda mouse juga bisa di browser.
+- Peta GeoJSON bisa berisi tiga lapisan lewat properti `jenis`: `Batas` (batas blok), `Existing` (area LA, diwarnai sesuai capaian), `Potensi` (garis putus-putus, tidak dihitung). Chip di atas peta menyalakan/mematikan Label, Batas blok, Area LA, Potensi. File tanpa `jenis` tetap dipakai seperti biasa (blok diwarnai penuh).
