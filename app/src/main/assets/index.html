@@ -216,32 +216,39 @@ function editAl(id){const a=S.d.alok.find(x=>x.id==id),v=prompt('Koreksi volume 
 const sisa=(b,r)=>Math.max(0,(r=='T'?750:250)*lu(b,r)-got(b,r));
 const rl=r=>r=='T'?'1 Tahun':r;
 const vis=b=>pmatch(b?b.pompa:'~');
-S.lyr=Object.assign({B:true,E:true,P:false},J('lyr')||{});
+S.lyr=Object.assign({B:true,E:true,N:true,P:false},J('lyr')||{});
 function geoMap(r){
  const g=J('geo'),k=localStorage.gk;if(!g||!k)return null;
- const L={B:[],E:[],P:[]};let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+ const L={B:[],E:[],N:[],P:[]};let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
  g.features.forEach(f=>{const m=f.geometry;if(!m)return;
   const rs=m.type=='Polygon'?[m.coordinates]:m.type=='MultiPolygon'?m.coordinates:[];if(!rs.length)return;
-  const j=(f.properties||{}).jenis,ly=j=='Existing'?'E':j=='Potensi'?'P':'B';
-  if(ly!='P')rs.forEach(q=>q.forEach(ring=>ring.forEach(c=>{x0=Math.min(x0,c[0]);x1=Math.max(x1,c[0]);y0=Math.min(y0,c[1]);y1=Math.max(y1,c[1])})));
-  L[ly].push({id:String((f.properties||{})[k]),rs})});
+  const j=(f.properties||{}).jenis,ly=(j=='Existing'||j=='Lama')?'E':j=='Baru'?'N':j=='Potensi'?'P':'B';
+  rs.forEach(q=>q.forEach(ring=>ring.forEach(c=>{x0=Math.min(x0,c[0]);x1=Math.max(x1,c[0]);y0=Math.min(y0,c[1]);y1=Math.max(y1,c[1])})));
+  L[ly].push({id:String((f.properties||{})[k]),rs,mu:(f.properties||{}).mulai})});
  if(x0>x1)return null;
- S.geoL={E:L.E.length>0,P:L.P.length>0};
- const hasLA=L.E.length>0,kx=Math.cos((y0+y1)/2*Math.PI/180),w=(x1-x0)*kx,h=y1-y0,sc=300/Math.max(w,h,1e-9),fs=300/70;
+ S.geoL={E:L.E.length+L.N.length>0,N:L.N.length>0,P:L.P.length>0};
+ const hasLA=L.E.length+L.N.length>0,kx=Math.cos((y0+y1)/2*Math.PI/180),w=(x1-x0)*kx,h=y1-y0,sc=300/Math.max(w,h,1e-9),fs=300/70;
  const X=c=>((c[0]-x0)*kx*sc).toFixed(1),Y=c=>((y1-c[1])*sc).toFixed(1);
  const dd=rs=>rs.map(q=>q.map(ring=>'M'+ring.map(c=>X(c)+','+Y(c)).join('L')+'Z').join('')).join('');
  const big=rs=>{let bs=null,ba=-1;rs.forEach(q=>{const o=q[0];let xa=1e9,xb=-1e9,ya=1e9,yb=-1e9;o.forEach(c=>{xa=Math.min(xa,c[0]);xb=Math.max(xb,c[0]);ya=Math.min(ya,c[1]);yb=Math.max(yb,c[1])});const a=(xb-xa)*(yb-ya);if(a>ba){ba=a;bs=o}});return bs||[]};
  const cen=ring=>[ring.reduce((a,c)=>a+ +X(c),0)/(ring.length||1),ring.reduce((a,c)=>a+ +Y(c),0)/(ring.length||1)];
  const base=hasLA?L.B:(L.B.length?L.B:L.E);
  let body='',lbls='';
- const potOn=p=>{const b=blk(p.id);return b&&bigLA(b,r)};
- if(S.lyr.P&&L.P.length)body+=L.P.filter(p=>!potOn(p)).map(p=>`<path d="${dd(p.rs)}" fill="rgba(74,163,255,.18)" stroke="#4aa3ff" stroke-width="${fs/16}" stroke-dasharray="${fs/5},${fs/8}" style="pointer-events:none"/>`).join('');
+ const mm=m=>{const x=/(\d{4})\D*R?([1-3])/i.exec(m||'');return x?+x[1]*10+ +x[2]:0};
+ const cur=S.yr*10+(r=='T'?3:+String(r).slice(1)),nAct=p=>mm(p.mu)<=cur,oldPot=!L.N.length;
+ const potOn=p=>{if(!oldPot)return false;const b=blk(p.id);return b&&bigLA(b,r)};
+ const dash=p=>`<path d="${dd(p.rs)}" fill="rgba(74,163,255,.18)" stroke="#4aa3ff" stroke-width="${fs/16}" stroke-dasharray="${fs/5},${fs/8}" style="pointer-events:none"/>`;
+ let dsh='';
+ if(S.lyr.P&&L.P.length)dsh+=L.P.filter(p=>!potOn(p)).map(dash).join('');
+ if(S.lyr.N&&L.N.length)dsh+=L.N.filter(p=>!nAct(p)).map(dash).join('');
  const bl=base.map(p=>{const b=blk(p.id),pc=b?pct(b,r):0,fill=hasLA?'#26352d':(b?col(pc):'#5c6b62');
   if(S.lyr.B||!hasLA){body+=`<g opacity="${vis(b)?1:.2}" onclick="if(S.moved)return;pick('${p.id}')" style="cursor:pointer"><path d="${dd(p.rs)}" fill="${S.lyr.B||!hasLA?fill:'transparent'}" fill-rule="evenodd" stroke="${S.lyr.B||!hasLA?'rgba(255,255,255,.6)':'none'}" stroke-width="${fs/14}"/></g>`}
   else body+=`<g onclick="if(S.moved)return;pick('${p.id}')"><path d="${dd(p.rs)}" fill="transparent"/></g>`;
   if(S.lbl){const [cx,cy]=cen(big(p.rs));lbls+=`<g opacity="${vis(b)?1:.2}" style="pointer-events:none"><text x="${cx}" y="${cy}" text-anchor="middle" style="font-size:${fs}px;stroke-width:${fs/5}px">${p.id}</text>${b?`<text x="${cx}" y="${cy+fs*1.1}" text-anchor="middle" style="font-size:${fs}px;stroke-width:${fs/5}px">${Math.round(pc)}%</text>`:''}</g>`}
   return p}),selB=base.find(p=>p.id==S.sel);
- if(hasLA&&S.lyr.E)body+=L.E.concat(L.P.filter(potOn)).map(p=>{const b=blk(p.id),fill=b?col(pct(b,r)):'#5c6b62';
+ body+=dsh;
+ const fills=(S.lyr.E?L.E:[]).concat(S.lyr.N?L.N.filter(nAct):[],L.P.filter(potOn));
+ if(hasLA)body+=fills.map(p=>{const b=blk(p.id),fill=b?col(pct(b,r)):'#5c6b62';
   return `<g opacity="${vis(b)?1:.2}" onclick="if(S.moved)return;pick('${p.id}')" style="cursor:pointer"><path d="${dd(p.rs)}" fill="${fill}" fill-rule="evenodd" stroke="rgba(0,0,0,.4)" stroke-width="${fs/40}"/></g>`}).join('');
  if(selB)body+=`<path d="${dd(selB.rs)}" fill="none" stroke="#ffeb3b" stroke-width="${fs/3}" style="pointer-events:none"/>`;
  return {w:w*sc,h:h*sc,body:body+lbls}}
@@ -275,7 +282,7 @@ function mapCard(r){
  const g=geoMap(r)||schemMap(r);
  if(!g)return '<div class="c lock">Belum ada blok. Tambahkan blok di menu Atur.</div>';
  S.mb=g;const z=S.z,w=g.w/z,h=g.h/z,x=(g.w-w)/2+S.px,y=(g.h-h)/2+S.py;
- return `<div class="mc${S.full?' fu':''}${blk(S.sel)?' hs':''}"><div class="chips"><button class="chip ${S.lbl?'on':''}" onclick="S.lbl=!S.lbl;render()">Label</button>${S.geoL&&S.geoL.E?`<button class="chip ${S.lyr.B?'on':''}" onclick="tgLy('B')">Batas blok</button><button class="chip ${S.lyr.E?'on':''}" onclick="tgLy('E')">Area LA</button>`:''}${S.geoL&&S.geoL.P?`<button class="chip ${S.lyr.P?'on':''}" onclick="tgLy('P')">Potensi</button>`:''}</div>
+ return `<div class="mc${S.full?' fu':''}${blk(S.sel)?' hs':''}"><div class="chips"><button class="chip ${S.lbl?'on':''}" onclick="S.lbl=!S.lbl;render()">Label</button>${S.geoL&&S.geoL.E?`<button class="chip ${S.lyr.B?'on':''}" onclick="tgLy('B')">Batas blok</button><button class="chip ${S.lyr.E?'on':''}" onclick="tgLy('E')">LA lama</button>`:''}${S.geoL&&S.geoL.N?`<button class="chip ${S.lyr.N?'on':''}" onclick="tgLy('N')">LA baru</button>`:''}${S.geoL&&S.geoL.P?`<button class="chip ${S.lyr.P?'on':''}" onclick="tgLy('P')">Potensi</button>`:''}</div>
  <div class="zb"><button onclick="zoom(1.6)">+</button><button onclick="zoom(1/1.6)">−</button><button onclick="fit()">⤢</button><button onclick="S.full=!S.full;render()">⛶</button></div>
  <svg id="ms" viewBox="${x} ${y} ${w} ${h}" style="touch-action:${z>1?'none':'pan-y'}">${g.body}</svg>${pop(r)}
  <div class="lgd">Capaian dosis ${rl(r)} (%)<div class="bar" style="width:150px"></div><div style="display:flex;justify-content:space-between;width:150px"><span>0</span><span>50</span><span>100</span></div><div><span style="display:inline-block;width:11px;height:11px;background:#000;border-radius:3px;vertical-align:-1px"></span> &gt;100% over</div></div></div>

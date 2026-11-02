@@ -49,3 +49,6 @@ Di Dashboard (paling bawah) ada kartu **Bagikan rekap**, mengikuti pilihan pompa
 - Dashboard punya filter **Tahun** (diambil dari tanggal alir/alokasi). Outstanding tetap saldo keseluruhan lintas tahun.
 - Peta: pada rotasi yang luasnya sudah bertambah, poligon Potensi ikut diwarnai bersama Existing.
 - Sheet baru `Luas` (id, blok, tahun, rotasi, luas) dibuat otomatis oleh `Code.gs`. Impor CSV mendukung kolom `luas_baru` dan `mulai` (mis. `2026-R3`).
+
+## Peta: LA lama, LA baru, Potensi
+Properti `jenis` di GeoJSON: `Batas` (batas blok), `Existing` atau `Lama` (LA lama), `Baru` (LA tambahan, dengan properti `mulai`, mis. `2026-R3`), `Potensi` (calon area, hanya garis, tidak dihitung). LA Baru tampil garis putus-putus sebelum periode `mulai`, lalu diwarnai sesuai capaian mulai periode itu. Tahap tambahan berikutnya cukup memakai `mulai` baru. Luas tetap dari tabel luas per periode.
