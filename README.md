@@ -43,3 +43,9 @@ Di Dashboard (paling bawah) ada kartu **Bagikan rekap**, mengikuti pilihan pompa
 ## Peta: cubit zoom dan lapisan
 - Dua jari untuk zoom in/out, satu jari menggeser (di tampilan biasa satu jari tetap menggulir halaman; pakai ⛶ layar penuh untuk geser bebas). Ketuk dua kali untuk zoom in. Roda mouse juga bisa di browser.
 - Peta GeoJSON bisa berisi tiga lapisan lewat properti `jenis`: `Batas` (batas blok), `Existing` (area LA, diwarnai sesuai capaian), `Potensi` (garis putus-putus, tidak dihitung). Chip di atas peta menyalakan/mematikan Label, Batas blok, Area LA, Potensi. File tanpa `jenis` tetap dipakai seperti biasa (blok diwarnai penuh).
+
+## Luas per periode dan filter tahun
+- Tiap blok punya **luas dasar** dan daftar **perubahan luas** (Atur › Daftar blok › Edit): luas baru berlaku mulai rotasi dan tahun tertentu. Capaian tiap rotasi dihitung dengan luas yang berlaku saat itu, jadi data lama tidak berubah. Target 1 Tahun = jumlah 250 m³/ha per rotasi × luas rotasinya (mis. 2026: R1, R2 pakai 197 ha, R3 pakai 404 ha).
+- Dashboard punya filter **Tahun** (diambil dari tanggal alir/alokasi). Outstanding tetap saldo keseluruhan lintas tahun.
+- Peta: pada rotasi yang luasnya sudah bertambah, poligon Potensi ikut diwarnai bersama Existing.
+- Sheet baru `Luas` (id, blok, tahun, rotasi, luas) dibuat otomatis oleh `Code.gs`. Impor CSV mendukung kolom `luas_baru` dan `mulai` (mis. `2026-R3`).

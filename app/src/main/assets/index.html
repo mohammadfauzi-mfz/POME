@@ -91,8 +91,15 @@ async function api(a,o){
 const R=()=>S.u.role,A=()=>R()=='Admin',P=()=>A()||R()=='PKS',K=()=>A()||R()=='Kebun';
 const can={input:P,alok:K,dash:()=>true,atur:()=>true};
 const blk=id=>S.d.blok.find(b=>b.id==id);
-const got=(b,r)=>S.d.alok.filter(a=>a.blok==b.id&&(r=='T'||a.rotasi==r)).reduce((s,a)=>s+a.vol,0);
-const pct=(b,r)=>got(b,r)/((r=='T'?750:250)*b.luas)*100;
+S.yr=new Date().getFullYear();
+const ry=t=>+String(t).slice(0,4)||0,fh=n=>String(Math.round(n*10)/10);
+function luasAt(b,k,y){let best=null,bp=-1;const p=y*10+k;
+ (S.d.luasH||[]).forEach(h=>{if(h.blok==b.id){const hp=(+h.tahun)*10+(+String(h.rotasi).replace('R',''));if(hp<=p&&hp>bp){bp=hp;best=h}}});
+ return best?best.luas:b.luas}
+const lu=(b,r,y)=>{y=y||S.yr;return r=='T'?[1,2,3].reduce((a,k)=>a+250*luasAt(b,k,y),0)/750:luasAt(b,+String(r).slice(1),y)};
+const got=(b,r,y)=>{y=y||S.yr;return S.d.alok.filter(a=>a.blok==b.id&&ry(a.tgl)==y&&(r=='T'||a.rotasi==r)).reduce((s,a)=>s+a.vol,0)};
+const bigLA=(b,r)=>(r=='T'?[1,2,3]:[+String(r).slice(1)]).some(k=>luasAt(b,k,S.yr)>b.luas+0.5);
+const pct=(b,r)=>got(b,r)/((r=='T'?750:250)*lu(b,r))*100;
 const outst=p=>!hasP(p)?0:S.d.input.filter(i=>i.pompa==p).reduce((s,i)=>s+i.vol,0)-S.d.alok.filter(a=>!a.riwayat&&(blk(a.blok)||{}).pompa==p).reduce((s,a)=>s+a.vol,0);
 const col=p=>p>100?'#000':`hsl(${Math.round(Math.max(0,p)*1.25)},70%,${p<50?46:40}%)`;
 const hasP=id=>S.d.pompa.some(p=>p.id==id);
@@ -108,8 +115,9 @@ const lock=m=>`<div class="lock">🔒<br>${m}</div>`;
 const OB=()=>J('ob')||[];
 const setOB=a=>{try{localStorage.ob=JSON.stringify(a)}catch(e){}};
 const saveCache=()=>{try{localStorage.cache=JSON.stringify(S.d)}catch(e){}};
-const TK={Pompa:'pompa',Blok:'blok',Input:'input',Alokasi:'alok'};
+const TK={Pompa:'pompa',Blok:'blok',Input:'input',Alokasi:'alok',Luas:'luasH'};
 function applyLocal(op){
+ if(!S.d.luasH)S.d.luasH=[];
  if(op.type=='batch')return op.items.forEach(it=>applyLocal({type:'save',t:it.t,row:it.row}));
  const k=TK[op.t];if(!k)return;
  if(op.type=='save'){const i=S.d[k].findIndex(x=>x.id==op.row.id);
@@ -132,7 +140,7 @@ async function flush(){
 async function load(){
  if(OB().length&&!fl)return flush();
  try{const j=await api('all');
-  S.d={pompa:j.Pompa,blok:j.Blok.map(b=>Object.assign(b,{luas:+b.luas})),
+  S.d={pompa:j.Pompa,luasH:(j.Luas||[]).map(h=>Object.assign(h,{tahun:+h.tahun,luas:+h.luas})),blok:j.Blok.map(b=>Object.assign(b,{luas:+b.luas})),
    input:j.Input.map(i=>Object.assign(i,{tgl:nd(i.tgl),hm0:+i.hm0,hm1:+i.hm1,vol:+i.vol})),
    alok:j.Alokasi.map(a=>Object.assign(a,{tgl:nd(a.tgl),vol:+a.vol,riwayat:a.riwayat||''}))};
   saveCache();S.err='';S.off=false}
@@ -196,16 +204,16 @@ function vAlok(){
  const bl=S.d.blok.filter(b=>f.ap===''?!hasP(b.pompa):b.pompa==f.ap);if(!bl.find(b=>b.id==f.ab))f.ab=bl[0]?bl[0].id:'';
  return `<div class="c"><h3>Alokasi ke blok</h3><label>Jalur pompa</label><select onchange="S.f.ap=this.value;render()">${pOpts0(f.ap)}</select>
  <div class="mut" style="margin-top:6px">${f.ap===''?'Blok tanpa pompa: tidak memakai saldo outstanding':`Outstanding: <b class="${outst(f.ap)<0?'neg':''}">${fmt(outst(f.ap))} m³</b>`}</div>
- <div class="r2"><div><label>Blok</label><select onchange="S.f.ab=this.value">${opts(bl.map(b=>[b.id,b.id+' ('+b.luas+' ha)']),f.ab)}</select></div>
+ <div class="r2"><div><label>Blok</label><select onchange="S.f.ab=this.value">${opts(bl.map(b=>[b.id,b.id+' ('+fh(lu(b,f.ar||'R1'))+' ha)']),f.ab)}</select></div>
  <div><label>Rotasi</label><select onchange="S.f.ar=this.value">${opts([['R1','R1'],['R2','R2'],['R3','R3']],f.ar)}</select></div></div>
  <label>Tanggal alokasi</label><input id="ta" type="date" value="${S.f.ta||today()}" onchange="S.f.ta=this.value"><label>Volume (m³)</label><input id="av" type="number" inputmode="decimal">${gpsBox()}<button class="btn" onclick="addAl()">Alokasikan</button></div>
- <div class="c"><h3>Riwayat alokasi</h3>${S.d.alok.slice().reverse().sort((a,b)=>String(b.tgl).localeCompare(String(a.tgl))).slice(0,40).map(a=>`<div class="row"><span>${a.riwayat?'📜 ':''}${a.blok} · ${a.rotasi} · ${dm(a.tgl)}${pend(a.id)}<br><span class="mut">${blk(a.blok)?fmt(a.vol/blk(a.blok).luas)+' m³/ha':''} · ${a.oleh}${gpsLink(a)}</span></span><span><b>${fmt(a.vol)}</b> m³<button class="btn sm" onclick="editAl('${a.id}')">Edit</button><button class="btn sm" onclick="del('Alokasi','${a.id}')">✕</button></span></div>`).join('')||'<div class="mut">Belum ada data</div>'}</div>`}
+ <div class="c"><h3>Riwayat alokasi</h3>${S.d.alok.slice().reverse().sort((a,b)=>String(b.tgl).localeCompare(String(a.tgl))).slice(0,40).map(a=>`<div class="row"><span>${a.riwayat?'📜 ':''}${a.blok} · ${a.rotasi} · ${dm(a.tgl)}${pend(a.id)}<br><span class="mut">${blk(a.blok)?fmt(a.vol/luasAt(blk(a.blok),+String(a.rotasi).slice(1)||1,ry(a.tgl)||S.yr))+' m³/ha':''} · ${a.oleh}${gpsLink(a)}</span></span><span><b>${fmt(a.vol)}</b> m³<button class="btn sm" onclick="editAl('${a.id}')">Edit</button><button class="btn sm" onclick="del('Alokasi','${a.id}')">✕</button></span></div>`).join('')||'<div class="mut">Belum ada data</div>'}</div>`}
 async function addAl(){const v=+$('#av').value,ta=fdate($('#ta').value);if(!v||!S.f.ab)return alert('Isi blok dan volume');
  if(S.sv)return;S.sv=1;try{const g=await getGps();save('Alokasi',Object.assign({id:uid(),tgl:ta,blok:S.f.ab,rotasi:S.f.ar,vol:v,oleh:S.u.username},gpsF(g)))}finally{S.sv=0}}
 function editAl(id){const a=S.d.alok.find(x=>x.id==id),v=prompt('Koreksi volume (m³):',a.vol);
  if(v===null||isNaN(+v))return;const t=prompt('Tanggal alokasi (YYYY-MM-DD):',a.tgl);save('Alokasi',Object.assign({},a,{vol:+v,tgl:fdate(t)}))}
 
-const sisa=(b,r)=>Math.max(0,(r=='T'?750:250)*b.luas-got(b,r));
+const sisa=(b,r)=>Math.max(0,(r=='T'?750:250)*lu(b,r)-got(b,r));
 const rl=r=>r=='T'?'1 Tahun':r;
 const vis=b=>pmatch(b?b.pompa:'~');
 S.lyr=Object.assign({B:true,E:true,P:false},J('lyr')||{});
@@ -226,13 +234,14 @@ function geoMap(r){
  const cen=ring=>[ring.reduce((a,c)=>a+ +X(c),0)/(ring.length||1),ring.reduce((a,c)=>a+ +Y(c),0)/(ring.length||1)];
  const base=hasLA?L.B:(L.B.length?L.B:L.E);
  let body='',lbls='';
- if(S.lyr.P&&L.P.length)body+=L.P.map(p=>`<path d="${dd(p.rs)}" fill="rgba(74,163,255,.18)" stroke="#4aa3ff" stroke-width="${fs/16}" stroke-dasharray="${fs/5},${fs/8}" style="pointer-events:none"/>`).join('');
+ const potOn=p=>{const b=blk(p.id);return b&&bigLA(b,r)};
+ if(S.lyr.P&&L.P.length)body+=L.P.filter(p=>!potOn(p)).map(p=>`<path d="${dd(p.rs)}" fill="rgba(74,163,255,.18)" stroke="#4aa3ff" stroke-width="${fs/16}" stroke-dasharray="${fs/5},${fs/8}" style="pointer-events:none"/>`).join('');
  const bl=base.map(p=>{const b=blk(p.id),pc=b?pct(b,r):0,fill=hasLA?'#26352d':(b?col(pc):'#5c6b62');
   if(S.lyr.B||!hasLA){body+=`<g opacity="${vis(b)?1:.2}" onclick="if(S.moved)return;pick('${p.id}')" style="cursor:pointer"><path d="${dd(p.rs)}" fill="${S.lyr.B||!hasLA?fill:'transparent'}" fill-rule="evenodd" stroke="${S.lyr.B||!hasLA?'rgba(255,255,255,.6)':'none'}" stroke-width="${fs/14}"/></g>`}
   else body+=`<g onclick="if(S.moved)return;pick('${p.id}')"><path d="${dd(p.rs)}" fill="transparent"/></g>`;
   if(S.lbl){const [cx,cy]=cen(big(p.rs));lbls+=`<g opacity="${vis(b)?1:.2}" style="pointer-events:none"><text x="${cx}" y="${cy}" text-anchor="middle" style="font-size:${fs}px;stroke-width:${fs/5}px">${p.id}</text>${b?`<text x="${cx}" y="${cy+fs*1.1}" text-anchor="middle" style="font-size:${fs}px;stroke-width:${fs/5}px">${Math.round(pc)}%</text>`:''}</g>`}
   return p}),selB=base.find(p=>p.id==S.sel);
- if(hasLA&&S.lyr.E)body+=L.E.map(p=>{const b=blk(p.id),fill=b?col(pct(b,r)):'#5c6b62';
+ if(hasLA&&S.lyr.E)body+=L.E.concat(L.P.filter(potOn)).map(p=>{const b=blk(p.id),fill=b?col(pct(b,r)):'#5c6b62';
   return `<g opacity="${vis(b)?1:.2}" onclick="if(S.moved)return;pick('${p.id}')" style="cursor:pointer"><path d="${dd(p.rs)}" fill="${fill}" fill-rule="evenodd" stroke="rgba(0,0,0,.4)" stroke-width="${fs/40}"/></g>`}).join('');
  if(selB)body+=`<path d="${dd(selB.rs)}" fill="none" stroke="#ffeb3b" stroke-width="${fs/3}" style="pointer-events:none"/>`;
  return {w:w*sc,h:h*sc,body:body+lbls}}
@@ -252,14 +261,14 @@ function schemMap(r){
 function pick(id,sc){S.sel=id;S.goMap=!!sc;render()}
 function pop(r){
  const s=blk(S.sel);if(!s)return '';
- const tgt=r=='T'?750:250,tg=tgt*s.luas,g=got(s,r),p=pct(s,r);
+ const tgt=r=='T'?750:250,L=lu(s,r),tg=tgt*L,g=got(s,r),p=pct(s,r);
  const al=S.d.alok.filter(a=>a.blok==s.id&&(r=='T'||a.rotasi==r)),last=al.slice().sort((a,b)=>String(b.tgl).localeCompare(String(a.tgl)))[0];
  const st=p>100?['Over','#000']:p>=100?['Tuntas','#2e9e4f']:g>0?['Berjalan','#f5a623']:['Belum mulai','#6b7a70'];
  return `<div class="pop"><div class="row" style="border:0;padding:0"><b style="font-size:17px">Blok ${s.id}</b><span><span class="pc" style="background:${st[1]}">${st[0]}</span><button class="btn sm" onclick="S.sel=null;render()">✕</button></span></div>
- <div class="mut">${s.luas} ha · ${pname(s.pompa)} · ${rl(r)}</div>
+ <div class="mut">${fh(L)} ha · ${pname(s.pompa)} · ${rl(r)} ${S.yr}</div>
  <div class="pg"><div class="pgb" style="width:${Math.min(100,p)}%;background:${col(p)}"></div></div>
  <div class="r2 pv"><div><b>${Math.round(p)}%</b><br><span class="mut">capaian</span></div><div><b>${fmt(g)} m³</b><br><span class="mut">sudah dialiri</span></div>
- <div><b>${fmt(g/s.luas)} m³/ha</b><br><span class="mut">dosis (target ${tgt})</span></div><div><b>${g>tg?fmt(g-tg):fmt(sisa(s,r))} m³</b><br><span class="mut">${g>tg?'kelebihan':'sisa kebutuhan'}</span></div></div>
+ <div><b>${fmt(g/L)} m³/ha</b><br><span class="mut">dosis (target ${tgt})</span></div><div><b>${g>tg?fmt(g-tg):fmt(sisa(s,r))} m³</b><br><span class="mut">${g>tg?'kelebihan':'sisa kebutuhan'}</span></div></div>
  <div class="mut">${['R1','R2','R3','T'].map(k=>(k=='T'?'Tahun':k)+' '+Math.round(pct(s,k))+'%').join(' · ')}</div>
  <div class="mut">${al.length} kali alokasi${last?' · terakhir '+dm(last.tgl)+' ('+fmt(last.vol)+' m³)':''}<br>${hasP(s.pompa)?'Outstanding '+pname(s.pompa)+': '+fmt(outst(s.pompa))+' m³':'Blok belum dikaitkan ke pompa'}</div>${K()?`<button class="btn" onclick="openAlok('${s.id}')">➕ Alokasikan ke blok ini</button>`:''}</div>`}
 function mapCard(r){
@@ -341,17 +350,17 @@ function shareFile(name,u8){
  else{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([u8]));a.download=name;a.click()}}
 function shareExcel(){
  const {bl,inp,al}=rekapData(),R4=['R1','R2','R3','T'];
- const h1=['Blok','Luas (ha)','Pompa'];R4.forEach(k=>{const n=k=='T'?'Tahun':k;h1.push(n+' (m³)',n+' (m³/ha)',n+' (%)')});
- const s1=[h1].concat(bl.map(b=>{const r=[b.id,b.luas,pname(b.pompa)];R4.forEach(k=>r.push(r0(got(b,k)),r0(got(b,k)/b.luas),r1(pct(b,k))));return r}));
+ const h1=['Blok','Pompa','Luas R1 (ha)','Luas R2 (ha)','Luas R3 (ha)'];R4.forEach(k=>{const n=k=='T'?'Tahun':k;h1.push(n+' (m³)',n+' (m³/ha)',n+' (%)')});
+ const s1=[h1].concat(bl.map(b=>{const r=[b.id,pname(b.pompa),lu(b,'R1'),lu(b,'R2'),lu(b,'R3')];R4.forEach(k=>r.push(r0(got(b,k)),r0(got(b,k)/lu(b,k)),r1(pct(b,k))));return r}));
  const s2=[['Tanggal','Pompa','HM awal','HM akhir','Jam','Volume (m³)','Oleh','Latitude','Longitude','Akurasi (m)','Waktu']].concat(inp.map(i=>[i.tgl,pname(i.pompa),i.hm0,i.hm1,r1(i.hm1-i.hm0),i.vol,i.oleh||'',+i.lat||'',+i.lng||'',+i.akurasi||'',i.waktu||'']));
- const s3=[['Tanggal','Blok','Rotasi','Volume (m³)','m³/ha','Oleh','Latitude','Longitude','Akurasi (m)','Waktu','Jenis']].concat(al.map(a=>[a.tgl,a.blok,a.rotasi,a.vol,blk(a.blok)?r0(a.vol/blk(a.blok).luas):'',a.oleh||'',+a.lat||'',+a.lng||'',+a.akurasi||'',a.waktu||'',a.riwayat?'Riwayat':'Alokasi']));
- shareFile('POME-Rekap-'+today()+'.xlsx',buildXlsx([['Rekap Blok',s1],['Input PKS',s2],['Alokasi',s3]]))}
+ const s3=[['Tanggal','Blok','Rotasi','Volume (m³)','m³/ha','Oleh','Latitude','Longitude','Akurasi (m)','Waktu','Jenis']].concat(al.map(a=>[a.tgl,a.blok,a.rotasi,a.vol,blk(a.blok)?r0(a.vol/luasAt(blk(a.blok),+String(a.rotasi).slice(1)||1,ry(a.tgl)||S.yr)):'',a.oleh||'',+a.lat||'',+a.lng||'',+a.akurasi||'',a.waktu||'',a.riwayat?'Riwayat':'Alokasi']));
+ shareFile('POME-Rekap-'+today()+'.xlsx',buildXlsx([['Rekap Blok '+S.yr,s1],['Input PKS',s2],['Alokasi',s3],['Riwayat Luas',[['Blok','Tahun','Rotasi mulai','Luas (ha)']].concat((S.d.luasH||[]).map(h=>[h.blok,h.tahun,h.rotasi,h.luas]))]]))}
 function textRekap(){
  const r=S.rot,pf=S.pf,{bl,inp,al}=rekapData(),ps=S.d.pompa.filter(p=>pmatch(p.id)),sum=a=>a.reduce((s,x)=>s+x.vol,0);
  const alr=al.filter(a=>r=='T'||a.rotasi==r),d=today().split('-').reverse().join('/');
- let t=`*REKAP POME* · ${d}\n${rl(r)} · ${pf=='-'?'Tanpa pompa':pf?pname(pf):'Semua pompa'}\n\nMasuk dari PKS: *${fmt(sum(inp))} m³*\nSudah dialokasi: *${fmt(sum(alr))} m³*\nOutstanding: *${fmt(sum(inp)-sum(al.filter(a=>!a.riwayat)))} m³*\n`;
+ let t=`*REKAP POME* · ${d}\n${rl(r)} ${S.yr} · ${pf=='-'?'Tanpa pompa':pf?pname(pf):'Semua pompa'}\n\nMasuk dari PKS: *${fmt(sum(inp))} m³*\nSudah dialokasi: *${fmt(sum(alr))} m³*\nOutstanding: *${fmt(sum(inp)-sum(al.filter(a=>!a.riwayat)))} m³*\n`;
  ps.forEach(p=>{const pb=bl.filter(b=>b.pompa==p.id).sort((a,b)=>pct(a,r)-pct(b,r));
-  t+=`\n*${p.nama}* · outstanding ${fmt(outst(p.id))} m³\n`+(pb.map(b=>`• ${b.id} (${b.luas} ha): ${r0(pct(b,r))}%${pct(b,r)>100?' ⚠️ over':pct(b,r)>=100?' ✅':''}`).join('\n')||'• belum ada blok')+'\n'});
+  t+=`\n*${p.nama}* · outstanding ${fmt(outst(p.id))} m³\n`+(pb.map(b=>`• ${b.id} (${fh(lu(b,r))} ha): ${r0(pct(b,r))}%${pct(b,r)>100?' ⚠️ over':pct(b,r)>=100?' ✅':''}`).join('\n')||'• belum ada blok')+'\n'});
  return t.trim()}
 function shareTxt(){const t=textRekap();
  if(window.Android&&Android.shareText)Android.shareText(t);else window.open('https://wa.me/?text='+encodeURIComponent(t))}
@@ -377,14 +386,14 @@ function qDraw(){
  <label>Tanggal alokasi</label><input id="qd" type="date" value="${Q.d||today()}" onchange="Q.d=this.value">
  <div class="qs" id="qs"></div>
  <div class="qa"><button class="btn sm" onclick="qAuto()">⚡ Isi otomatis</button><button class="btn sm" onclick="qClear()">Kosongkan</button></div>
- <div>${bl.map((b,i)=>{const sv=Math.ceil(sisa(b,Q.r));return `<div class="qr${Q.focus==b.id?' f':''}"><span><b>${b.id}</b> · ${b.luas} ha<br><span class="mut">${Math.round(pct(b,Q.r))}% · sisa ${fmt(sv)} m³</span></span>
+ <div>${bl.map((b,i)=>{const sv=Math.ceil(sisa(b,Q.r));return `<div class="qr${Q.focus==b.id?' f':''}"><span><b>${b.id}</b> · ${fh(lu(b,Q.r))} ha<br><span class="mut">${Math.round(pct(b,Q.r))}% · sisa ${fmt(sv)} m³</span></span>
   <span class="qi"><div><button class="btn sm" onclick="qSet(${i},${sv})">Sisa</button><input id="q_${i}" type="number" inputmode="decimal" placeholder="0" value="${Q.v[b.id]||''}" oninput="qIn(${i},this.value)"></div><span class="mut" id="qw_${i}"></span></span></div>`}).join('')||'<div class="mut" style="padding:10px 0">Pompa ini belum punya blok</div>'}</div>
  ${gpsBox()}<button class="btn" id="qb" onclick="qSave()">Alokasikan</button></div>`;
  qUpd();if(Q.focus){const i=bl.findIndex(b=>b.id==Q.focus),e=$('#q_'+i);if(e)setTimeout(()=>e.scrollIntoView({block:'center'}),50)}}
 function qUpd(){
  const bl=qBlocks(),o=outst(Q.p);let tot=0,n=0;
  bl.forEach((b,i)=>{const v=+Q.v[b.id]||0;if(v>0){tot+=v;n++}const w=$('#qw_'+i);
-  if(w){const pp=(got(b,Q.r)+v)/(250*b.luas)*100;w.innerHTML=v>0?'→ '+Math.round(pp)+'%'+(pp>100?' <b class="neg">⚠️ over</b>':''):''}});
+  if(w){const pp=(got(b,Q.r)+v)/(250*lu(b,Q.r))*100;w.innerHTML=v>0?'→ '+Math.round(pp)+'%'+(pp>100?' <b class="neg">⚠️ over</b>':''):''}});
  const left=o-tot,q=$('#qs'),qb=$('#qb');
  if(q)q.innerHTML=Q.p===''?`Blok tanpa pompa · tidak memakai saldo outstanding<br>Akan dialokasikan: <b>${fmt(tot)} m³</b>`:`Outstanding ${pname(Q.p)}: <b class="${o<0?'neg':''}">${fmt(o)} m³</b><br>Akan dialokasikan: <b>${fmt(tot)} m³</b> · ${left>=0?'sisa':'<span class="neg">kurang</span>'} <b class="${left<0?'neg':''}">${fmt(Math.abs(left))} m³</b>`;
  if(qb)qb.textContent=n?`Alokasikan ${n} blok · ${fmt(tot)} m³`:'Alokasikan'}
@@ -405,11 +414,12 @@ async function qSave(){
   qClose();toast('✓ '+items.length+' alokasi disimpan')}finally{S.sv=0}}
 function toast(m){const e=$('#toast');e.textContent=m;e.className='on';clearTimeout(toast.t);toast.t=setTimeout(()=>{e.className=''},2400)}
 
+const yrs=()=>{const a=new Set([new Date().getFullYear(),S.yr]);S.d.alok.concat(S.d.input).forEach(x=>{const y=ry(x.tgl);if(y>2000)a.add(y)});return [...a].sort((x,y)=>y-x)};
 function vDash(){
  const r=S.rot,pf=S.pf,D=S.d;
  const bl=D.blok.filter(b=>pmatch(b.pompa)),ids=new Set(bl.map(b=>b.id)),ps=D.pompa.filter(p=>pmatch(p.id));
- const inp=D.input.filter(i=>pmatch(i.pompa)),al=D.alok.filter(a=>ids.has(a.blok)),alr=al.filter(a=>r=='T'||a.rotasi==r);
- const sum=a=>a.reduce((s,x)=>s+x.vol,0),tin=sum(inp),out=tin-sum(al.filter(a=>!a.riwayat));
+ const inpA=D.input.filter(i=>pmatch(i.pompa)),inp=inpA.filter(i=>ry(i.tgl)==S.yr),alA=D.alok.filter(a=>ids.has(a.blok)),al=alA.filter(a=>ry(a.tgl)==S.yr),alr=al.filter(a=>r=='T'||a.rotasi==r);
+ const sum=a=>a.reduce((s,x)=>s+x.vol,0),tin=sum(inp),out=sum(inpA)-sum(alA.filter(a=>!a.riwayat));
  const pr=bl.map(b=>pct(b,r)),tun=pr.filter(p=>p>=100).length,ov=pr.filter(p=>p>100).length,ber=pr.length-tun;
  const nOut=ps.filter(p=>outst(p.id)>0).length;
  const card=(c,l,v,s)=>`<div class="kc" style="border-left-color:${c}"><div class="mut">${l}</div><div class="kv">${v}</div><div class="mut">${s}</div></div>`;
@@ -419,10 +429,11 @@ function vDash(){
   <div class="mut" style="margin:4px 0 8px">${pb.length} blok · <b style="color:var(--ac)">${op.length} masih bisa dialiri (${rl(r)})</b> · ${pb.length-op.length} tuntas · sisa kebutuhan ${fmt(sk)} m³</div>${ch||'<span class="mut">Semua blok sudah tuntas</span>'}${K()&&pb.length?`<button class="btn" style="margin-top:8px;${o>0?'':'background:var(--bd);color:var(--tx)'}" onclick="openAlok(null,'${p.id}')">➕ Alokasi cepat${o>0?' ('+fmt(o)+' m³ tersedia)':''}</button>`:''}</div>`}).join('');
  const un=bl.filter(b=>!hasP(b.pompa)).sort((a,b)=>pct(a,r)-pct(b,r)),unc=un.length?`<div class="c"><div class="row" style="border:0;padding:0"><b>Belum ada pompa</b><span class="mut">${un.length} blok</span></div><div class="mut" style="margin:4px 0 8px">Blok ini belum dikaitkan ke jalur pompa. Atur lewat Atur › Daftar blok › Edit.</div>${un.slice(0,12).map(b=>`<span class="ch" style="background:${col(pct(b,r))}" onclick="pick('${b.id}',1)">${b.id} ${Math.round(pct(b,r))}%</span>`).join('')}${un.length>12?`<span class="ch" style="background:#6b7a70">+${un.length-12}</span>`:''}${K()?`<button class="btn" style="margin-top:8px;background:var(--bd);color:var(--tx)" onclick="openAlok(null,'-')">➕ Alokasi cepat (tanpa pompa)</button>`:''}</div>`:'';
  const s=blk(S.sel);
- const det=s?`<div class="c"><h3>Blok ${s.id} · ${s.luas} ha · ${pname(s.pompa)}</h3>${['R1','R2','R3','T'].map(k=>`<div class="row"><span>${k=='T'?'Total 1 tahun (750/ha)':k}</span><span><b>${fmt(got(s,k)/s.luas)}</b> m³/ha · <b>${Math.round(pct(s,k))}%</b></span></div>`).join('')}<div class="mut" style="margin-top:6px">Sisa ${rl(r)}: ${fmt(sisa(s,r))} m³</div></div>`:'';
- const rek=bl.map(b=>{const p=pct(b,r);return `<div class="row" onclick="pick('${b.id}',1)"><span><b>${b.id}</b> · ${b.luas} ha<br><span class="mut">${pname(b.pompa)} · ${fmt(got(b,r)/b.luas)} m³/ha</span></span><span class="pc" style="background:${col(p)}">${Math.round(p)}%</span></div>`}).join('');
- return `<div class="r2"><div><label>Jalur / Pompa</label><select class="fs" onchange="S.pf=this.value;render()">${opts([['','Semua Pompa']].concat(D.pompa.map(p=>[p.id,p.nama]),D.blok.some(b=>!hasP(b.pompa))?[['-','Tanpa pompa']]:[]),pf)}</select></div>
- <div><label>Rotasi</label><select class="fs" onchange="S.rot=this.value;render()">${opts([['R1','R1'],['R2','R2'],['R3','R3'],['T','1 Tahun']],r)}</select></div></div>
+ const det=s?`<div class="c"><h3>Blok ${s.id} · ${pname(s.pompa)} · ${S.yr}</h3>${['R1','R2','R3','T'].map(k=>`<div class="row"><span>${k=='T'?'Total 1 tahun (750/ha)':k}<span class="mut"> · ${fh(lu(s,k))} ha</span></span><span><b>${fmt(got(s,k)/lu(s,k))}</b> m³/ha · <b>${Math.round(pct(s,k))}%</b></span></div>`).join('')}<div class="mut" style="margin-top:6px">Sisa ${rl(r)}: ${fmt(sisa(s,r))} m³</div></div>`:'';
+ const rek=bl.map(b=>{const p=pct(b,r);return `<div class="row" onclick="pick('${b.id}',1)"><span><b>${b.id}</b> · ${fh(lu(b,r))} ha<br><span class="mut">${pname(b.pompa)} · ${fmt(got(b,r)/lu(b,r))} m³/ha</span></span><span class="pc" style="background:${col(p)}">${Math.round(p)}%</span></div>`}).join('');
+ return `<div><label>Jalur / Pompa</label><select class="fs" onchange="S.pf=this.value;render()">${opts([['','Semua Pompa']].concat(D.pompa.map(p=>[p.id,p.nama]),D.blok.some(b=>!hasP(b.pompa))?[['-','Tanpa pompa']]:[]),pf)}</select></div>
+ <div class="r2" style="margin-top:6px"><div><label>Rotasi</label><select class="fs" onchange="S.rot=this.value;render()">${opts([['R1','R1'],['R2','R2'],['R3','R3'],['T','1 Tahun']],r)}</select></div>
+ <div><label>Tahun</label><select class="fs" onchange="S.yr=+this.value;render()">${opts(yrs().map(y=>[y,y]),S.yr)}</select></div></div>
  <div class="r2" style="margin-top:12px">${card('#2e9e4f','Masuk dari PKS',fmt(tin)+' <small>m³</small>',inp.length+' kali input')}
  ${card('#2e9e4f','Sudah Dialokasi',fmt(sum(alr))+' <small>m³</small>',alr.length+' kali · '+rl(r))}
  ${card('#d93a35','Outstanding',fmt(out)+' <small>m³</small>',nOut+' pompa menunggu alokasi')}
@@ -459,12 +470,12 @@ function vAtur(){
  const gk=J('geo')?Object.keys((J('geo').features[0]||{}).properties||{}):[];
  return `<div class="c"><h3>Jalur / pompa</h3>${S.d.pompa.map(p=>`<div class="row">${P()?`<input value="${p.nama}" onchange="save('Pompa',{id:'${p.id}',nama:this.value})"><button class="btn sm" onclick="del('Pompa','${p.id}')">✕</button>`:p.nama}</div>`).join('')}
  ${P()?`<button class="btn" onclick="addP()">+ Tambah pompa</button>`:'<div class="mut">Penambahan pompa oleh tim PKS</div>'}</div>
- <div class="c"><h3>Daftar blok</h3>${S.d.blok.map(b=>`<div class="row"><span><b>${b.id}</b> · ${b.luas} ha<br><span class="mut">${pname(b.pompa)}</span></span>${K()?`<span><button class="btn sm" onclick="editB('${b.id}')">Edit</button><button class="btn sm" onclick="del('Blok','${b.id}')">✕</button></span>`:''}</div>`).join('')}
+ <div class="c"><h3>Daftar blok</h3>${S.d.blok.map(b=>`<div class="row"><span><b>${b.id}</b> · ${fh(luasAt(b,3,9999))} ha${luasAt(b,3,9999)!=b.luas?` <span class="mut">(dasar ${fh(b.luas)})</span>`:''}<br><span class="mut">${pname(b.pompa)}</span></span>${K()?`<span><button class="btn sm" onclick="editB('${b.id}')">Edit</button><button class="btn sm" onclick="del('Blok','${b.id}')">✕</button></span>`:''}</div>`).join('')}
  ${K()?`<div class="r2"><div><label>Blok</label><input id="nb"></div><div><label>Luas (ha)</label><input id="nl" type="number" inputmode="decimal"></div></div><label>Jalur pompa (boleh dikosongkan)</label><select id="np">${pOpts0('')}</select><button class="btn" onclick="addB()">+ Tambah blok</button>`:'<div class="mut">Penambahan blok oleh tim Kebun</div>'}</div>
  <div class="c"><h3>Peta (GeoJSON) di HP ini</h3><input type="file" accept="*/*" onchange="imp(this)">
  ${gk.length?`<label>Kolom nama blok</label><select onchange="localStorage.gk=this.value;render()">${opts(gk.map(k=>[k,k]),localStorage.gk)}</select><button class="btn sm" style="margin:8px 0 0" onclick="delete localStorage.geo;render()">Hapus peta</button>`:''}
  <div class="mut" id="gi" style="margin-top:6px">Isi kolom nama blok harus sama dengan nama blok di daftar. Peta tersimpan di HP ini saja.</div></div>
- ${K()?`<div class="c"><h3>Impor data blok &amp; riwayat (CSV)</h3><input type="file" accept="*/*" onchange="impCsv(this)"><div class="mut" style="margin-top:6px">Kolom: <b>blok</b>, <b>luas</b>, pompa (boleh kosong), r1, r2, r3 (volume m³ riwayat tiap rotasi), tgl1, tgl2, tgl3 (opsional, format YYYY-MM-DD). Impor ulang file yang sama tidak membuat data ganda. Cocok juga untuk revisi luas atau tambah blok banyak sekaligus.</div></div>`:''}
+ ${K()?`<div class="c"><h3>Impor data blok &amp; riwayat (CSV)</h3><input type="file" accept="*/*" onchange="impCsv(this)"><div class="mut" style="margin-top:6px">Kolom: <b>blok</b>, <b>luas</b>, pompa (boleh kosong), r1, r2, r3 (volume m³ riwayat tiap rotasi), tgl1, tgl2, tgl3 (opsional, format YYYY-MM-DD), luas_baru dan mulai (mis. 2026-R3, luas yang berlaku mulai rotasi itu). Impor ulang file yang sama tidak membuat data ganda. Cocok juga untuk revisi luas atau tambah blok banyak sekaligus.</div></div>`:''}
  ${A()?`<div class="c"><h3>User</h3>${S.users.map(u=>`<div class="row"><span>${u.username} <span class="mut">${u.role}</span></span><span><button class="btn sm" onclick="pwU('${u.username}','${u.role}')">Reset PW</button>${u.username!=S.u.username?`<button class="btn sm" onclick="del('User','${u.username}')">✕</button>`:''}</span></div>`).join('')}
  <div class="r2"><div><label>Username</label><input id="nu" autocapitalize="none"></div><div><label>Password</label><input id="npw"></div></div><label>Peran</label><select id="nr"><option>PKS</option><option>Kebun</option><option>Admin</option></select><button class="btn" onclick="addU()">+ Tambah user</button></div>`:''}
  ${updCard()}
@@ -476,12 +487,21 @@ function addB(){const id=$('#nb').value.trim(),l=+$('#nl').value;if(!id||!l)retu
  if(blk(id))return alert('Blok sudah ada');save('Blok',{id,luas:l,pompa:$('#np').value||''})}
 const Bk={id:''};
 function editB(id){const b=blk(id);if(!b)return;Bk.id=id;const el=$('#sheet');el.className='on';
+ const H=(S.d.luasH||[]).filter(h=>h.blok==id).sort((x,y)=>(x.tahun*10+ +String(x.rotasi).slice(1))-(y.tahun*10+ +String(y.rotasi).slice(1)));
  el.innerHTML=`<div class="bd" onclick="bkClose()"></div><div class="sh2"><div class="gr"></div>
  <div class="row" style="border:0;padding:0"><b style="font-size:18px">Blok ${b.id}</b><button class="btn sm" onclick="bkClose()">✕</button></div>
- <label>Luas (ha)</label><input id="bl_l" type="number" inputmode="decimal" value="${b.luas}">
+ <label>Luas dasar (ha), berlaku sejak awal</label><input id="bl_l" type="number" inputmode="decimal" value="${b.luas}">
  <label>Jalur pompa</label><select id="bl_p">${pOpts0(hasP(b.pompa)?b.pompa:'')}</select>
- <div class="mut" style="margin-top:8px">Mengubah luas otomatis menghitung ulang capaian dosis (m³/ha) blok ini. Pompa boleh dikosongkan dan diisi nanti.</div>
- <button class="btn" onclick="bkSave()">Simpan</button></div>`}
+ <button class="btn" onclick="bkSave()">Simpan luas dasar &amp; pompa</button>
+ <h3 style="margin-top:16px">Perubahan luas per periode</h3>
+ <div class="mut">Capaian tiap rotasi dihitung dengan luas yang berlaku saat rotasi itu, jadi data lama tidak berubah.</div>
+ ${H.map(h=>`<div class="row"><span>Mulai ${h.rotasi} ${h.tahun}: <b>${fh(h.luas)} ha</b></span><button class="btn sm" onclick="bkDelL('${h.id}')">✕</button></div>`).join('')||'<div class="mut" style="padding:8px 0">Belum ada perubahan, luas dasar dipakai terus.</div>'}
+ <div class="r2" style="margin-top:8px"><div><label>Mulai rotasi</label><select id="bl_r">${opts([['R1','R1'],['R2','R2'],['R3','R3']],'R3')}</select></div><div><label>Tahun</label><input id="bl_y" type="number" inputmode="numeric" value="${S.yr}"></div></div>
+ <label>Luas baru (ha)</label><input id="bl_n" type="number" inputmode="decimal" placeholder="mis. 23">
+ <button class="btn" style="background:var(--bd);color:var(--tx)" onclick="bkAddL()">+ Tambah perubahan luas</button></div>`}
+function bkAddL(){const l=+$('#bl_n').value,y=+$('#bl_y').value,r=$('#bl_r').value;if(!(l>0)||!(y>2000))return alert('Isi tahun dan luas baru');
+ save('Luas',{id:Bk.id+'-'+y+'-'+r,blok:Bk.id,tahun:y,rotasi:r,luas:l});toast('✓ Luas baru ditambahkan');editB(Bk.id)}
+function bkDelL(id){del('Luas',id);editB(Bk.id)}
 function bkClose(){const el=$('#sheet');el.className='';el.innerHTML=''}
 function bkSave(){const l=+$('#bl_l').value;if(!(l>0))return alert('Luas harus lebih dari 0');
  save('Blok',Object.assign({},blk(Bk.id),{luas:l,pompa:$('#bl_p').value||''}));bkClose();toast('✓ Blok '+Bk.id+' diperbarui')}
@@ -502,19 +522,21 @@ function impCsv(el){const f=el.files[0];if(!f)return;const rd=new FileReader();
   const {rows,d}=parseCSV(String(rd.result).replace(/^﻿/,'')),h=rows.shift().map(x=>x.trim().toLowerCase()),ix=n=>h.indexOf(n);
   if(ix('blok')<0)throw new Error('Kolom "blok" tidak ditemukan di baris pertama');
   const num=v=>{v=String(v==null?'':v).trim();if(d==';')v=v.replace(',','.');return v===''?NaN:+v};
-  const DT={1:'2026-04-30',2:'2026-08-31',3:'2026-10-31'},bl=[],al=[],miss=[];let nb=0,ul=0,np=0;
+  const DT={1:'2026-04-30',2:'2026-08-31',3:'2026-10-31'},bl=[],al=[],miss=[];let nb=0,ul=0,np=0,nl=0;const lh=[];
   rows.forEach(r=>{const id=(r[ix('blok')]||'').trim();if(!id)return;const ex=blk(id);let l=num(r[ix('luas')]);
    if(isNaN(l)||l<=0){if(ex)l=ex.luas;else return miss.push(id)}
    let pid=ex&&hasP(ex.pompa)?ex.pompa:'';
    if(ix('pompa')>=0){const nm=(r[ix('pompa')]||'').trim().toLowerCase();if(nm){const pp=S.d.pompa.find(p=>p.nama.toLowerCase()==nm||p.id==nm);if(pp)pid=pp.id;else np++}}
    if(!ex)nb++;else if(ex.luas!=l)ul++;
    bl.push({t:'Blok',row:{id,luas:l,pompa:pid}});
+   const lb=num(r[ix('luas_baru')]),mm=/(\d{4})\D*R?([1-3])/i.exec((r[ix('mulai')]||'')+'');
+   if(lb>0&&mm){nl++;lh.push({t:'Luas',row:{id:id+'-'+mm[1]+'-R'+mm[2],blok:id,tahun:+mm[1],rotasi:'R'+mm[2],luas:lb}})}
    [1,2,3].forEach(k=>{const v=num(r[ix('r'+k)]);if(v>0){const t=(r[ix('tgl'+k)]||'').trim();
     al.push({t:'Alokasi',row:{id:'rw-'+id+'-R'+k,tgl:/^\d{4}-\d{2}-\d{2}$/.test(t)?t:DT[k],blok:id,rotasi:'R'+k,vol:Math.round(v*10)/10,oleh:'riwayat',riwayat:'1'}})}})});
   if(!bl.length)throw new Error('Tidak ada baris yang bisa dibaca');
   const tv=al.reduce((a,x)=>a+x.row.vol,0);
-  if(!confirm('Impor '+bl.length+' blok ('+nb+' baru, '+ul+' luas diperbarui) dan '+al.length+' riwayat alokasi (total '+fmt(tv)+' m³)?'+(np?'\n'+np+' nama pompa tidak dikenali dan dibiarkan kosong.':'')+(miss.length?'\nDilewati (luas kosong): '+miss.join(', '):'')+'\n\nRiwayat tidak dihitung ke saldo outstanding pompa.'))return;
-  const all=bl.concat(al);for(let i=0;i<all.length;i+=30)enqueue({type:'batch',items:all.slice(i,i+30),by:S.u.username});
+  if(!confirm('Impor '+bl.length+' blok ('+nb+' baru, '+ul+' luas diperbarui) dan '+al.length+' riwayat alokasi (total '+fmt(tv)+' m³)'+(nl?' dan '+nl+' perubahan luas per periode':'')+'?'+(np?'\n'+np+' nama pompa tidak dikenali dan dibiarkan kosong.':'')+(miss.length?'\nDilewati (luas kosong): '+miss.join(', '):'')+'\n\nRiwayat tidak dihitung ke saldo outstanding pompa.'))return;
+  const all=bl.concat(al,lh);for(let i=0;i<all.length;i+=30)enqueue({type:'batch',items:all.slice(i,i+30),by:S.u.username});
   toast('✓ Impor '+bl.length+' blok dan '+al.length+' riwayat')}
   catch(e){alert('Impor gagal: '+e.message)}el.value=''};rd.readAsText(f)}
 

@@ -5,9 +5,10 @@ const SH = {
   Blok: ['id', 'luas', 'pompa'],
   Input: ['id', 'tgl', 'pompa', 'hm0', 'hm1', 'vol', 'oleh', 'lat', 'lng', 'akurasi', 'waktu'],
   Alokasi: ['id', 'tgl', 'blok', 'rotasi', 'vol', 'oleh', 'lat', 'lng', 'akurasi', 'waktu', 'riwayat'],
-  User: ['username', 'hash', 'role']
+  User: ['username', 'hash', 'role'],
+  Luas: ['id', 'blok', 'tahun', 'rotasi', 'luas']
 };
-const PERM = { Pompa: ['PKS', 'Admin'], Blok: ['Kebun', 'Admin'], Input: ['PKS', 'Admin'], Alokasi: ['Kebun', 'Admin'], User: ['Admin'] };
+const PERM = { Pompa: ['PKS', 'Admin'], Blok: ['Kebun', 'Admin'], Input: ['PKS', 'Admin'], Alokasi: ['Kebun', 'Admin'], User: ['Admin'], Luas: ['Kebun', 'Admin'] };
 
 function setup() {
   const ss = SpreadsheetApp.getActive();
@@ -22,11 +23,18 @@ function setup() {
   if (!PropertiesService.getScriptProperties().getProperty('KEY'))
     PropertiesService.getScriptProperties().setProperty('KEY', Utilities.getUuid());
 }
-const sh = n => SpreadsheetApp.getActive().getSheetByName(n);
+const sh = n => {
+  const ss = SpreadsheetApp.getActive();
+  let s = ss.getSheetByName(n);
+  if (!s && SH[n]) { s = ss.insertSheet(n); s.appendRow(SH[n]); s.getRange(1, 1, s.getMaxRows(), SH[n].length).setNumberFormat('@'); }
+  return s;
+};
 const hash = p => Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, p));
 // Tambah kolom baru (mis. lat/lng) ke sheet lama otomatis, tanpa menghapus data.
 function ensureCols(n) {
-  const s = sh(n), lc = Math.max(s.getLastColumn(), 1), h = s.getRange(1, 1, 1, lc).getValues()[0].map(String);
+  const s = sh(n);
+  if (s.getLastRow() == 0) { s.appendRow(SH[n]); return; }
+  const lc = Math.max(s.getLastColumn(), 1), h = s.getRange(1, 1, 1, lc).getValues()[0].map(String);
   SH[n].forEach(c => {
     if (h.indexOf(c) < 0) {
       h.push(c);
@@ -61,7 +69,7 @@ function handle(q) {
   const t = String(q.token || ''), un = t.split(':')[0];
   const me = rows('User').find(x => x.username == un);
   if (!me || un + ':' + tok(me) != t) throw new Error('Sesi habis, login ulang');
-  if (q.action == 'all') return { ok: true, Pompa: rows('Pompa'), Blok: rows('Blok'), Input: rows('Input'), Alokasi: rows('Alokasi') };
+  if (q.action == 'all') return { ok: true, Pompa: rows('Pompa'), Blok: rows('Blok'), Input: rows('Input'), Alokasi: rows('Alokasi'), Luas: rows('Luas') };
   if (q.action == 'users') { need('User', me); return { ok: true, users: rows('User').map(x => ({ username: x.username, role: x.role })) }; }
   if (q.action == 'save') { need(q.t, me); save(q.t, q.row, me); return { ok: true }; }
   if (q.action == 'batch') {
